@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Projects</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f3ef;
+        --text: #1f1f1f;
+        --muted: #666;
+        --card: #ffffff;
+        --border: #e1dad3;
+        --accent: #b3512f;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Georgia", "Times New Roman", serif;
+        background: radial-gradient(circle at 20% 20%, #fff 0%, var(--bg) 55%, #efe9e2 100%);
+        color: var(--text);
+      }
+      main {
+        max-width: 900px;
+        margin: 48px auto;
+        padding: 0 20px 48px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 36px;
+        letter-spacing: 0.5px;
+      }
+      p {
+        margin: 0 0 24px;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        display: block;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--card);
+        text-decoration: none;
+        color: inherit;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+      .card:hover,
+      .card:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+        outline: 2px solid transparent;
+      }
+      .name {
+        font-size: 20px;
+        margin: 0 0 6px;
+      }
+      .slug {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .badge {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Final Projects</h1>
+      <p>Select a project to view its page.</p>
+      <section class="grid" aria-label="Project list">
+        <a class="card" href="christian_hernandez/index.html" data-name="christian_hernandez">
+          <h2 class="name"></h2>
+          <div class="slug">christian_hernandez</div>
+          <div class="badge">Open</div>
+        </a>
+        <a class="card" href="jane_grandhi/index.html" data-name="jane_grandhi">
+          <h2 class="name"></h2>
+          <div class="slug">jane_grandhi</div>
+          <div class="badge">Open</div>
+        </a>
+      </section>
+    </main>
+    <script>
+      function toTitleCase(value) {
+        return value
+          .replace(/[_-]+/g, " ")
+          .split(" ")
+          .filter(Boolean)
+          .map(function (word) {
+            return word.charAt(0).toUpperCase() + word.slice(1);
+          })
+          .join(" ");
+      }
+
+      document.querySelectorAll("[data-name]").forEach(function (el) {
+        var name = el.getAttribute("data-name") || "";
+        var title = toTitleCase(name);
+        var titleEl = el.querySelector(".name");
+        if (titleEl) {
+          titleEl.textContent = title;
+        }
+      });
+    </script>
+  </body>
+</html>
