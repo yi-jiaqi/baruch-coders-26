@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cookie Clicker</title>
+<style>
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: Arial;
+    text-align: center;
+}
+
+.cookie {
+    width: 200px;
+    height: 200px;
+    background-color: brown;
+    border-radius: 50%;
+    margin: 30px auto;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+}
+
+button {
+    padding: 10px;
+    margin: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<h1>Cookie Clicker</h1>
+
+<h2 id="count">Cookies: 0</h2>
+<h3 id="cps">CPS: 0</h3>
+
+<div class="cookie" onclick="clickCookie()">🍪</div>
+
+<button onclick="buyAuto()">Buy Auto Clicker (Cost: <span id="cost">10</span>)</button>
+
+<script>
+let cookies = 0;
+let cps = 0;
+let cost = 10;
+
+function clickCookie() {
+    cookies++;
+    update();
+}
+
+function buyAuto() {
+    if (cookies >= cost) {
+        cookies -= cost;
+        cps += 1;
+        cost = Math.floor(cost * 1.5);
+        document.getElementById("cost").innerText = cost;
+        update();
+    }
+}
+
+function update() {
+    document.getElementById("count").innerText = "Cookies: " + cookies;
+    document.getElementById("cps").innerText = "CPS: " + cps;
+}
+
+setInterval(function(){
+    cookies += cps;
+    update();
+}, 1000);
+
+update();
+</script>
+
+</body>
+</html>
