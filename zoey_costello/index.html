@@ -1,0 +1,2393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mermaid Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Georgia', serif;
+        }
+
+        #gameCanvas {
+            display: block;
+        }
+
+        /* Dialogue Box Styles */
+        #dialogueBox {
+            display: none;
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 800px;
+            background: linear-gradient(180deg, rgba(20, 60, 80, 0.95) 0%, rgba(10, 40, 60, 0.98) 100%);
+            border: 3px solid #4a9;
+            border-radius: 15px;
+            padding: 20px 25px;
+            color: #fff;
+            font-size: 18px;
+            line-height: 1.6;
+            box-shadow: 0 0 30px rgba(74, 153, 153, 0.5), inset 0 0 20px rgba(74, 153, 153, 0.1);
+            z-index: 1000;
+        }
+
+        #speakerName {
+            font-weight: bold;
+            color: #7fd;
+            font-size: 20px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(119, 255, 221, 0.5);
+        }
+
+        #dialogueText {
+            margin-bottom: 15px;
+        }
+
+        #continueHint {
+            text-align: right;
+            font-size: 14px;
+            color: #aaa;
+            font-style: italic;
+        }
+
+        #instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        #timeDisplay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 18px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        #minimap {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            background: rgba(0, 40, 80, 0.7);
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 7px;
+        }
+
+        #minimapLabel {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #healthBar {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        #healthFill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ff6666);
+            transition: width 0.3s ease;
+        }
+
+        #healthLabel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        #staminaBar {
+            position: fixed;
+            top: 90px;
+            left: 20px;
+            width: 200px;
+            height: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        #staminaFill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #44aaff, #66ccff);
+            transition: width 0.1s ease;
+        }
+
+        #staminaLabel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        #warningOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 50;
+            animation: pulseWarning 0.5s infinite;
+        }
+
+        @keyframes pulseWarning {
+            0%, 100% { background: rgba(0, 50, 0, 0.3); }
+            50% { background: rgba(0, 100, 0, 0.5); }
+        }
+
+        #pollutionWarning {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #0f0;
+            border-radius: 15px;
+            padding: 30px 50px;
+            color: #0f0;
+            font-size: 24px;
+            text-align: center;
+            z-index: 200;
+            animation: flashWarning 0.5s infinite;
+        }
+
+        @keyframes flashWarning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="instructions">
+        WASD - Move | SHIFT - Dash | Reach the right edge to find the scientists
+    </div>
+
+    <div id="timeDisplay">12:00 PM</div>
+
+    <div id="minimap">
+        <div id="minimapLabel">Map</div>
+        <canvas id="minimapCanvas"></canvas>
+    </div>
+
+    <div id="healthBar">
+        <div id="healthFill"></div>
+        <div id="healthLabel">Health: 100%</div>
+    </div>
+
+    <div id="staminaBar">
+        <div id="staminaFill"></div>
+        <div id="staminaLabel">Stamina: 100%</div>
+    </div>
+
+    <div id="warningOverlay"></div>
+
+    <div id="pollutionWarning">
+        ⚠️ TOXIC WASTE DUMPED! ⚠️<br>
+        <span style="font-size: 16px;">Deep water is now poisonous!</span>
+    </div>
+
+    <div id="dialogueBox">
+        <div id="speakerName"></div>
+        <div id="dialogueText"></div>
+        <div id="continueHint">Press SPACE or click to continue...</div>
+    </div>
+
+    <script>
+        // ============================================
+        // DIALOGUE CONTENT - EDIT THIS SECTION
+        // ============================================
+        // Format: { speaker: "Name", text: "Dialogue text here" }
+        // Speakers: "Mermaid", "Scientist", "Robot"
+
+        const DIALOGUE_SCRIPT = [
+            { speaker: "Scientist", text: "Well, well, well... A real mermaid! How delightfully convenient!" },
+            { speaker: "Robot", text: "TARGET ACQUIRED. SCANNING... CONFIRMED: AQUATIC HUMANOID LIFEFORM." },
+            { speaker: "Mermaid", text: "Hello there! I followed the signs... Are you the ones who put them underwater?" },
+            { speaker: "Scientist", text: "Indeed we did! I am Dr. Vex, and this is my loyal assistant, DOOM-7. We've been waiting for you." },
+            { speaker: "Mermaid", text: "Waiting for me? Why? What is this place?" },
+            { speaker: "Scientist", text: "This is my laboratory! And soon, it will be the birthplace of my greatest invention..." },
+            { speaker: "Robot", text: "INITIATING VILLAIN MONOLOGUE PROTOCOL. DR. VEX, YOU MAY PROCEED." },
+            { speaker: "Scientist", text: "You see, little fish-girl, I plan to dump my special chemical into the ocean. It will poison every creature in the sea!" },
+            { speaker: "Mermaid", text: "What?! That's horrible! Why would you do such a thing?!" },
+            { speaker: "Scientist", text: "Because the ocean takes up too much space! Once all the fish are gone, I can build my underwater parking lots!" },
+            { speaker: "Robot", text: "PARKING LOTS ARE VERY PROFITABLE. FISH ARE NOT. THIS IS LOGICAL." },
+            { speaker: "Mermaid", text: "You're insane! The ocean is home to millions of creatures! You can't just destroy it!" },
+            { speaker: "Scientist", text: "Oh, but I can! And there's nothing you can do to stop me! Mwahahaha!" },
+            // ADD MORE DIALOGUE LINES HERE
+            // { speaker: "Mermaid", text: "Your text here" },
+            // { speaker: "Scientist", text: "Your text here" },
+            // { speaker: "Robot", text: "Your text here" },
+        ];
+
+        // ============================================
+        // END OF DIALOGUE CONTENT
+        // ============================================
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
+
+        // Screen and world dimensions
+        let screenWidth, screenHeight;
+        let worldWidth, worldHeight;
+
+        // Sky and water surface settings
+        const SKY_HEIGHT = 300; // Height of sky above water
+        const WATER_SURFACE_Y = SKY_HEIGHT; // Y position where water begins
+
+        function resizeCanvas() {
+            screenWidth = window.innerWidth;
+            screenHeight = window.innerHeight;
+            canvas.width = screenWidth;
+            canvas.height = screenHeight;
+            worldWidth = screenWidth * 10;
+            worldHeight = screenHeight * 10 + SKY_HEIGHT; // Add sky height to world
+
+            // Set minimap canvas size
+            minimapCanvas.width = 200;
+            minimapCanvas.height = 200;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game state
+        let gameTime = 12 * 60; // 12:00 PM in minutes
+        const timeSpeed = 0.5; // minutes per second
+        let lastTimestamp = 0;
+
+        // Camera
+        const camera = {
+            x: 0,
+            y: 0
+        };
+
+        // Player (Mermaid) - position will be set after resize
+        const player = {
+            x: 500,
+            y: 0, // Will be set properly after resizeCanvas
+            width: 80,
+            height: 50,
+            speed: 400,
+            tailPhase: 0,
+            hairPhase: 0,
+            health: 100,
+            maxHealth: 100,
+            stamina: 100,
+            maxStamina: 100,
+            facingRight: true, // Track which direction mermaid is facing
+            isDashing: false
+        };
+        // Set initial player Y position after screen dimensions are known
+        player.y = WATER_SURFACE_Y + window.innerHeight * 2;
+
+        // Pollution state
+        let pollutionActive = false;
+        let pollutionLevel = 0; // 0 to 1, increases after dialogue
+        const DAMAGE_PER_SECOND = 15; // Damage taken per second in polluted water
+        const DEEP_WATER_THRESHOLD = 0.5; // Threshold for deep water (used in minimap)
+
+        // Poison clouds - irregular spreading pollution
+        const poisonClouds = [];
+        const MAX_POISON_CLOUDS = 50;
+
+        function generatePoisonCloud(x, y) {
+            return {
+                x: x,
+                y: y,
+                radius: 100 + Math.random() * 200,
+                growthRate: 20 + Math.random() * 30,
+                maxRadius: 300 + Math.random() * 400,
+                opacity: 0.3 + Math.random() * 0.3,
+                wobblePhase: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.5 + Math.random() * 1
+            };
+        }
+
+        // Input handling
+        const keys = {
+            w: false,
+            a: false,
+            s: false,
+            d: false,
+            shift: false
+        };
+
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) {
+                keys[key] = true;
+            }
+            if (e.key === 'Shift') {
+                keys.shift = true;
+            }
+            if (e.code === 'Space' && dialogueActive) {
+                e.preventDefault();
+                advanceDialogue();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (e.key === 'Shift') {
+                keys.shift = false;
+            }
+            if (keys.hasOwnProperty(key)) {
+                keys[key] = false;
+            }
+        });
+
+        // Sea creatures on the bottom
+        const seaCreatures = [];
+        const creatureTypes = ['coral', 'seaweed', 'starfish', 'shell', 'anemone', 'rock'];
+
+        function generateSeaCreatures() {
+            const numCreatures = 300;
+            const waterBottom = worldHeight - 50;
+            for (let i = 0; i < numCreatures; i++) {
+                seaCreatures.push({
+                    type: creatureTypes[Math.floor(Math.random() * creatureTypes.length)],
+                    x: Math.random() * (worldWidth - 500), // Keep away from bank
+                    y: waterBottom - Math.random() * 150,
+                    size: 20 + Math.random() * 40,
+                    color: `hsl(${Math.random() * 60 + 100}, ${50 + Math.random() * 30}%, ${30 + Math.random() * 30}%)`,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        generateSeaCreatures();
+
+        // Direction signs
+        const signs = [];
+        function generateSigns() {
+            const numSigns = 40;
+            for (let i = 0; i < numSigns; i++) {
+                signs.push({
+                    x: 200 + Math.random() * (worldWidth - 800),
+                    y: WATER_SURFACE_Y + 200 + Math.random() * (worldHeight - WATER_SURFACE_Y - 400),
+                    type: Math.random() > 0.5 ? 'right' : 'above',
+                    wobble: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        generateSigns();
+
+        // Bubbles
+        const bubbles = [];
+        function spawnBubble(x, y) {
+            bubbles.push({
+                x: x + (Math.random() - 0.5) * 30,
+                y: y,
+                size: 3 + Math.random() * 8,
+                speed: 50 + Math.random() * 100,
+                wobblePhase: Math.random() * Math.PI * 2,
+                wobbleSpeed: 2 + Math.random() * 3
+            });
+        }
+
+        // Fish (background decoration)
+        const fish = [];
+        function generateFish() {
+            for (let i = 0; i < 50; i++) {
+                fish.push({
+                    x: Math.random() * (worldWidth - 500),
+                    y: WATER_SURFACE_Y + 100 + Math.random() * (worldHeight - WATER_SURFACE_Y - 300),
+                    size: 15 + Math.random() * 25,
+                    speed: 30 + Math.random() * 60,
+                    direction: Math.random() > 0.5 ? 1 : -1,
+                    color: `hsl(${Math.random() * 360}, ${60 + Math.random() * 30}%, ${50 + Math.random() * 20}%)`,
+                    tailPhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        generateFish();
+
+        // Light rays
+        const lightRays = [];
+        function generateLightRays() {
+            for (let i = 0; i < 20; i++) {
+                lightRays.push({
+                    x: Math.random() * worldWidth,
+                    width: 50 + Math.random() * 150,
+                    opacity: 0.03 + Math.random() * 0.05,
+                    speed: 10 + Math.random() * 20
+                });
+            }
+        }
+        generateLightRays();
+
+        // Bank scene characters (positioned on the bank, at water level)
+        // They stand on the beach which is at WATER_SURFACE_Y (same as water level)
+        const bankScene = {
+            triggered: false,
+            scientist: {
+                x: window.innerWidth * 10 - 120,
+                y: WATER_SURFACE_Y - 30  // Standing on beach, slightly above water line
+            },
+            robot: {
+                x: window.innerWidth * 10 - 40,
+                y: WATER_SURFACE_Y - 30  // Standing on beach, slightly above water line
+            }
+        };
+
+        // Dialogue system
+        let dialogueActive = false;
+        let currentDialogueIndex = 0;
+        const dialogueBox = document.getElementById('dialogueBox');
+        const speakerName = document.getElementById('speakerName');
+        const dialogueText = document.getElementById('dialogueText');
+
+        function startDialogue() {
+            dialogueActive = true;
+            currentDialogueIndex = 0;
+            showDialogueLine();
+            dialogueBox.style.display = 'block';
+        }
+
+        function showDialogueLine() {
+            if (currentDialogueIndex < DIALOGUE_SCRIPT.length) {
+                const line = DIALOGUE_SCRIPT[currentDialogueIndex];
+                speakerName.textContent = line.speaker;
+                dialogueText.textContent = line.text;
+
+                // Color code speakers
+                if (line.speaker === 'Mermaid') {
+                    speakerName.style.color = '#7fd';
+                } else if (line.speaker === 'Scientist') {
+                    speakerName.style.color = '#f55'; // Evil red
+                } else if (line.speaker === 'Robot') {
+                    speakerName.style.color = '#f80'; // Menacing orange
+                }
+            }
+        }
+
+        function advanceDialogue() {
+            currentDialogueIndex++;
+            if (currentDialogueIndex >= DIALOGUE_SCRIPT.length) {
+                dialogueBox.style.display = 'none';
+                dialogueActive = false;
+                // Trigger pollution after dialogue ends!
+                triggerPollution();
+            } else {
+                showDialogueLine();
+            }
+        }
+
+        function triggerPollution() {
+            // Show warning message
+            const warningEl = document.getElementById('pollutionWarning');
+            warningEl.style.display = 'block';
+
+            // Start pollution spreading
+            pollutionActive = true;
+
+            // Show health bar
+            document.getElementById('healthBar').style.display = 'block';
+
+            // Hide warning after 3 seconds
+            setTimeout(() => {
+                warningEl.style.display = 'none';
+            }, 3000);
+
+            // Update instructions
+            document.getElementById('instructions').innerHTML =
+                'WASD - Move | SHIFT - Dash | ⚠️ AVOID POISON CLOUDS!';
+        }
+
+        dialogueBox.addEventListener('click', () => {
+            if (dialogueActive) advanceDialogue();
+        });
+
+        // Update game time
+        function updateTime(deltaTime) {
+            gameTime += timeSpeed * deltaTime;
+            if (gameTime >= 18 * 60) gameTime = 18 * 60; // Cap at 6 PM
+
+            const hours = Math.floor(gameTime / 60);
+            const minutes = Math.floor(gameTime % 60);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours > 12 ? hours - 12 : hours;
+            document.getElementById('timeDisplay').textContent =
+                `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+        }
+
+        // Get sky/water color based on time (deep water - affected by pollution)
+        function getWaterColor() {
+            const progress = (gameTime - 12 * 60) / (6 * 60); // 0 at noon, 1 at 6 PM
+
+            if (pollutionActive) {
+                // Polluted deep water: navy blue with green tint
+                const r = Math.floor(10 + pollutionLevel * 10);
+                const g = Math.floor(30 + pollutionLevel * 40); // Green tint from toxins
+                const b = Math.floor(60 + pollutionLevel * 20); // Dark navy
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            const r = Math.floor(10 + progress * 30);
+            const g = Math.floor(80 + progress * (-20));
+            const b = Math.floor(120 + progress * (-30));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function getSurfaceColor() {
+            const progress = (gameTime - 12 * 60) / (6 * 60);
+
+            if (pollutionActive) {
+                // Surface water slightly affected but still safer
+                const r = Math.floor(80 + pollutionLevel * 20);
+                const g = Math.floor(150 + pollutionLevel * 30);
+                const b = Math.floor(180 - pollutionLevel * 40);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            const r = Math.floor(100 + progress * 100);
+            const g = Math.floor(180 + progress * (-30));
+            const b = Math.floor(220 + progress * (-50));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // Check if player is inside any poison cloud
+        function isInPoisonCloud() {
+            if (!pollutionActive) return false;
+
+            for (const cloud of poisonClouds) {
+                const dx = player.x - cloud.x;
+                const dy = player.y - cloud.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                // Account for wobble in the cloud shape
+                const wobble = Math.sin(cloud.wobblePhase) * 20;
+                if (distance < cloud.radius + wobble) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Get poison intensity at player position (0-1)
+        function getPoisonIntensity() {
+            if (!pollutionActive) return 0;
+
+            let maxIntensity = 0;
+            for (const cloud of poisonClouds) {
+                const dx = player.x - cloud.x;
+                const dy = player.y - cloud.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < cloud.radius) {
+                    // Intensity is higher near the center
+                    const intensity = 1 - (distance / cloud.radius);
+                    maxIntensity = Math.max(maxIntensity, intensity * cloud.opacity);
+                }
+            }
+            return maxIntensity;
+        }
+
+        // Update poison clouds
+        function updatePoisonClouds(deltaTime) {
+            if (!pollutionActive) return;
+
+            // Spawn new poison clouds periodically from the beach
+            if (poisonClouds.length < MAX_POISON_CLOUDS && Math.random() < deltaTime * 2) {
+                // Spawn from the beach/lab area
+                const spawnX = worldWidth - 300 - Math.random() * 200;
+                const spawnY = WATER_SURFACE_Y + 100 + Math.random() * (worldHeight - WATER_SURFACE_Y - 200);
+                poisonClouds.push(generatePoisonCloud(spawnX, spawnY));
+            }
+
+            // Update existing clouds
+            for (const cloud of poisonClouds) {
+                // Grow the cloud
+                if (cloud.radius < cloud.maxRadius) {
+                    cloud.radius += cloud.growthRate * deltaTime;
+                }
+
+                // Wobble animation
+                cloud.wobblePhase += cloud.wobbleSpeed * deltaTime;
+
+                // Slowly drift left (spreading into ocean)
+                cloud.x -= 15 * deltaTime;
+
+                // Slight vertical drift
+                cloud.y += Math.sin(cloud.wobblePhase * 0.5) * 5 * deltaTime;
+            }
+
+            // Remove clouds that have drifted too far left
+            for (let i = poisonClouds.length - 1; i >= 0; i--) {
+                if (poisonClouds[i].x + poisonClouds[i].radius < 0) {
+                    poisonClouds.splice(i, 1);
+                }
+            }
+        }
+
+        // Update health bar UI
+        function updateHealthUI() {
+            const healthFill = document.getElementById('healthFill');
+            const healthLabel = document.getElementById('healthLabel');
+            const warningOverlay = document.getElementById('warningOverlay');
+
+            const healthPercent = Math.max(0, player.health / player.maxHealth * 100);
+            healthFill.style.width = healthPercent + '%';
+            healthLabel.textContent = 'Health: ' + Math.floor(healthPercent) + '%';
+
+            // Change color based on health
+            if (healthPercent > 60) {
+                healthFill.style.background = 'linear-gradient(90deg, #44ff44, #66ff66)';
+            } else if (healthPercent > 30) {
+                healthFill.style.background = 'linear-gradient(90deg, #ffff44, #ffff66)';
+            } else {
+                healthFill.style.background = 'linear-gradient(90deg, #ff4444, #ff6666)';
+            }
+
+            // Show warning overlay when in polluted water
+            if (pollutionActive && isInPoisonCloud()) {
+                warningOverlay.style.display = 'block';
+            } else {
+                warningOverlay.style.display = 'none';
+            }
+        }
+
+        // Update stamina bar UI
+        function updateStaminaUI() {
+            const staminaFill = document.getElementById('staminaFill');
+            const staminaLabel = document.getElementById('staminaLabel');
+
+            const staminaPercent = Math.max(0, player.stamina / player.maxStamina * 100);
+            staminaFill.style.width = staminaPercent + '%';
+            staminaLabel.textContent = 'Stamina: ' + Math.floor(staminaPercent) + '%';
+
+            // Change color based on stamina
+            if (staminaPercent > 50) {
+                staminaFill.style.background = 'linear-gradient(90deg, #44aaff, #66ccff)';
+            } else if (staminaPercent > 20) {
+                staminaFill.style.background = 'linear-gradient(90deg, #ffaa44, #ffcc66)';
+            } else {
+                staminaFill.style.background = 'linear-gradient(90deg, #ff6644, #ff8866)';
+            }
+        }
+
+        // Update player
+        function updatePlayer(deltaTime) {
+            if (dialogueActive) return;
+
+            let dx = 0, dy = 0;
+            if (keys.w) dy -= 1;
+            if (keys.s) dy += 1;
+            if (keys.a) dx -= 1;
+            if (keys.d) dx += 1;
+
+            // Update facing direction based on horizontal movement
+            if (dx > 0) {
+                player.facingRight = true;
+            } else if (dx < 0) {
+                player.facingRight = false;
+            }
+
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+
+            // Dashing with shift - consumes stamina
+            let currentSpeed = player.speed;
+            player.isDashing = false;
+
+            if (keys.shift && player.stamina > 0 && (dx !== 0 || dy !== 0)) {
+                // Dashing!
+                currentSpeed = player.speed * 2.5; // 2.5x speed when dashing
+                player.stamina -= 40 * deltaTime; // Consume stamina
+                player.stamina = Math.max(0, player.stamina);
+                player.isDashing = true;
+
+                // Spawn extra bubbles when dashing
+                if (Math.random() < 0.5) {
+                    spawnBubble(player.x - (player.facingRight ? 40 : -40), player.y + (Math.random() - 0.5) * 20);
+                }
+            } else {
+                // Regenerate stamina when not dashing
+                player.stamina += 25 * deltaTime;
+                player.stamina = Math.min(player.maxStamina, player.stamina);
+            }
+
+            player.x += dx * currentSpeed * deltaTime;
+            player.y += dy * currentSpeed * deltaTime;
+
+            // Boundaries - player cannot go above water surface (into sky)
+            player.x = Math.max(50, Math.min(worldWidth - 250, player.x));
+            player.y = Math.max(WATER_SURFACE_Y + 50, Math.min(worldHeight - 100, player.y));
+
+            // Animation - faster when dashing
+            const animSpeed = player.isDashing ? 2 : 1;
+            player.tailPhase += deltaTime * 5 * animSpeed;
+            player.hairPhase += deltaTime * 3 * animSpeed;
+
+            // Spawn bubbles occasionally when moving
+            if ((dx !== 0 || dy !== 0) && Math.random() < 0.1) {
+                const bubbleOffsetX = player.facingRight ? -30 : 30;
+                spawnBubble(player.x + bubbleOffsetX, player.y);
+            }
+
+            // Update stamina UI
+            updateStaminaUI();
+
+            // Check for bank trigger
+            if (player.x > worldWidth - 400 && !bankScene.triggered) {
+                bankScene.triggered = true;
+                setTimeout(startDialogue, 500);
+            }
+
+            // Pollution damage from poison clouds
+            if (pollutionActive) {
+                // Gradually increase pollution level (visual effect)
+                if (pollutionLevel < 1) {
+                    pollutionLevel += deltaTime * 0.1;
+                    pollutionLevel = Math.min(1, pollutionLevel);
+                }
+
+                // Take damage inside poison clouds
+                const poisonIntensity = getPoisonIntensity();
+                if (poisonIntensity > 0) {
+                    player.health -= DAMAGE_PER_SECOND * poisonIntensity * deltaTime;
+                    player.health = Math.max(0, player.health);
+
+                    // Spawn toxic bubbles when taking damage
+                    if (Math.random() < 0.3 * poisonIntensity) {
+                        spawnToxicBubble(player.x, player.y);
+                    }
+                } else {
+                    // Slowly regenerate health outside poison
+                    player.health += 5 * deltaTime;
+                    player.health = Math.min(player.maxHealth, player.health);
+                }
+
+                // Update health UI
+                updateHealthUI();
+            }
+        }
+
+        // Toxic bubbles (green, poisonous)
+        const toxicBubbles = [];
+        function spawnToxicBubble(x, y) {
+            toxicBubbles.push({
+                x: x + (Math.random() - 0.5) * 50,
+                y: y + (Math.random() - 0.5) * 30,
+                size: 5 + Math.random() * 10,
+                speed: 30 + Math.random() * 50,
+                wobblePhase: Math.random() * Math.PI * 2,
+                wobbleSpeed: 2 + Math.random() * 3,
+                life: 1 // Fades over time
+            });
+        }
+
+        function updateToxicBubbles(deltaTime) {
+            for (let i = toxicBubbles.length - 1; i >= 0; i--) {
+                const b = toxicBubbles[i];
+                b.y -= b.speed * deltaTime;
+                b.wobblePhase += b.wobbleSpeed * deltaTime;
+                b.x += Math.sin(b.wobblePhase) * 0.8;
+                b.life -= deltaTime * 0.5;
+
+                if (b.life <= 0) {
+                    toxicBubbles.splice(i, 1);
+                }
+            }
+        }
+
+        // Update camera
+        function updateCamera() {
+            camera.x = player.x - screenWidth / 2;
+            camera.y = player.y - screenHeight / 2;
+
+            camera.x = Math.max(0, Math.min(worldWidth - screenWidth, camera.x));
+            camera.y = Math.max(0, Math.min(worldHeight - screenHeight, camera.y));
+        }
+
+        // Update bubbles
+        function updateBubbles(deltaTime) {
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const b = bubbles[i];
+                b.y -= b.speed * deltaTime;
+                b.wobblePhase += b.wobbleSpeed * deltaTime;
+                b.x += Math.sin(b.wobblePhase) * 0.5;
+
+                if (b.y < 0) {
+                    bubbles.splice(i, 1);
+                }
+            }
+        }
+
+        // Update fish
+        function updateFish(deltaTime) {
+            for (const f of fish) {
+                f.x += f.speed * f.direction * deltaTime;
+                f.tailPhase += deltaTime * 8;
+
+                if (f.x < -50 || f.x > worldWidth - 400) {
+                    f.direction *= -1;
+                }
+            }
+        }
+
+        // Update light rays
+        function updateLightRays(deltaTime) {
+            for (const ray of lightRays) {
+                ray.x += ray.speed * deltaTime;
+                if (ray.x > worldWidth) ray.x = -ray.width;
+            }
+        }
+
+        // Get sky color based on time
+        function getSkyColor() {
+            const progress = (gameTime - 12 * 60) / (6 * 60); // 0 at noon, 1 at 6 PM
+            const r = Math.floor(135 + progress * 80);  // Gets more orange/red
+            const g = Math.floor(206 + progress * (-80)); // Gets darker
+            const b = Math.floor(235 + progress * (-100)); // Gets more orange
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function getSkyColorBottom() {
+            const progress = (gameTime - 12 * 60) / (6 * 60);
+            const r = Math.floor(176 + progress * 60);
+            const g = Math.floor(224 + progress * (-60));
+            const b = Math.floor(230 + progress * (-80));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // Draw sky (above water, unreachable)
+        function drawSky() {
+            const waterSurfaceScreenY = WATER_SURFACE_Y - camera.y;
+
+            // Only draw if sky is visible on screen
+            if (waterSurfaceScreenY > 0) {
+                // Sky gradient
+                const skyGradient = ctx.createLinearGradient(0, 0, 0, waterSurfaceScreenY);
+                skyGradient.addColorStop(0, getSkyColor());
+                skyGradient.addColorStop(1, getSkyColorBottom());
+                ctx.fillStyle = skyGradient;
+                ctx.fillRect(0, 0, screenWidth, Math.min(waterSurfaceScreenY, screenHeight));
+
+                // Draw sun
+                const progress = (gameTime - 12 * 60) / (6 * 60);
+                const sunX = screenWidth * 0.7 + progress * screenWidth * 0.2;
+                const sunY = Math.max(30, waterSurfaceScreenY * 0.3 + progress * waterSurfaceScreenY * 0.4);
+
+                if (sunY < screenHeight && sunY > 0) {
+                    // Sun glow
+                    const sunGlow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 100);
+                    sunGlow.addColorStop(0, 'rgba(255, 255, 200, 0.8)');
+                    sunGlow.addColorStop(0.3, 'rgba(255, 200, 100, 0.3)');
+                    sunGlow.addColorStop(1, 'rgba(255, 150, 50, 0)');
+                    ctx.fillStyle = sunGlow;
+                    ctx.fillRect(sunX - 100, sunY - 100, 200, 200);
+
+                    // Sun
+                    ctx.fillStyle = `rgb(${255}, ${Math.floor(220 - progress * 50)}, ${Math.floor(100 - progress * 50)})`;
+                    ctx.beginPath();
+                    ctx.arc(sunX, sunY, 40, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Draw some clouds
+                drawClouds(waterSurfaceScreenY);
+
+                // Water surface line with shimmer
+                const time = Date.now() / 1000;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let x = 0; x < screenWidth; x += 5) {
+                    const waveY = waterSurfaceScreenY + Math.sin((x + camera.x) * 0.02 + time * 2) * 5;
+                    if (x === 0) ctx.moveTo(x, waveY);
+                    else ctx.lineTo(x, waveY);
+                }
+                ctx.stroke();
+            }
+        }
+
+        // Draw clouds in sky
+        function drawClouds(maxY) {
+            const time = Date.now() / 50000;
+            const clouds = [
+                { x: 100, y: 50, size: 1 },
+                { x: 400, y: 80, size: 0.8 },
+                { x: 700, y: 40, size: 1.2 },
+                { x: 1000, y: 90, size: 0.9 },
+            ];
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            for (const cloud of clouds) {
+                const cloudX = ((cloud.x + time * 50 - camera.x * 0.1) % (screenWidth + 200)) - 100;
+                const cloudY = cloud.y;
+
+                if (cloudY < maxY - 30) {
+                    // Draw fluffy cloud shape
+                    ctx.beginPath();
+                    ctx.arc(cloudX, cloudY, 25 * cloud.size, 0, Math.PI * 2);
+                    ctx.arc(cloudX + 30 * cloud.size, cloudY - 5, 30 * cloud.size, 0, Math.PI * 2);
+                    ctx.arc(cloudX + 60 * cloud.size, cloudY, 25 * cloud.size, 0, Math.PI * 2);
+                    ctx.arc(cloudX + 30 * cloud.size, cloudY + 10, 20 * cloud.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Draw water pattern
+        function drawWaterBackground() {
+            const waterSurfaceScreenY = WATER_SURFACE_Y - camera.y;
+
+            // Base gradient for water
+            const startY = Math.max(0, waterSurfaceScreenY);
+            if (startY < screenHeight) {
+                const gradient = ctx.createLinearGradient(0, startY, 0, screenHeight);
+                gradient.addColorStop(0, getSurfaceColor());
+                gradient.addColorStop(1, getWaterColor());
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, startY, screenWidth, screenHeight - startY);
+            }
+
+            // Water caustics pattern (only in water area)
+            ctx.globalAlpha = 0.1;
+            const time = Date.now() / 1000;
+            for (let x = -100; x < screenWidth + 100; x += 60) {
+                for (let y = Math.max(-100, waterSurfaceScreenY); y < screenHeight + 100; y += 60) {
+                    const worldX = x + camera.x;
+                    const worldY = y + camera.y;
+                    const offset = Math.sin(worldX * 0.01 + time) * 20 + Math.cos(worldY * 0.01 + time * 0.7) * 20;
+
+                    ctx.beginPath();
+                    ctx.arc(x + offset, y + offset * 0.5, 30, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.fill();
+                }
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Draw light rays
+        function drawLightRays() {
+            ctx.globalAlpha = 0.1;
+            for (const ray of lightRays) {
+                const screenX = ray.x - camera.x;
+                if (screenX > -ray.width && screenX < screenWidth + ray.width) {
+                    const gradient = ctx.createLinearGradient(screenX, 0, screenX + ray.width, screenHeight);
+                    gradient.addColorStop(0, `rgba(255, 255, 200, ${ray.opacity})`);
+                    gradient.addColorStop(1, 'rgba(255, 255, 200, 0)');
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, 0);
+                    ctx.lineTo(screenX + ray.width, 0);
+                    ctx.lineTo(screenX + ray.width + 200, screenHeight);
+                    ctx.lineTo(screenX + 200, screenHeight);
+                    ctx.fill();
+                }
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Draw sea floor
+        function drawSeaFloor() {
+            const floorY = worldHeight - 80 - camera.y;
+            if (floorY < screenHeight) {
+                // Sandy bottom
+                const gradient = ctx.createLinearGradient(0, floorY, 0, screenHeight);
+                gradient.addColorStop(0, '#8b7355');
+                gradient.addColorStop(1, '#5c4a3a');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, Math.max(0, floorY), screenWidth, screenHeight - floorY);
+            }
+        }
+
+        // Draw sea creatures
+        function drawSeaCreatures() {
+            const time = Date.now() / 1000;
+            for (const creature of seaCreatures) {
+                const screenX = creature.x - camera.x;
+                const screenY = creature.y - camera.y;
+
+                if (screenX < -100 || screenX > screenWidth + 100 ||
+                    screenY < -100 || screenY > screenHeight + 100) continue;
+
+                ctx.save();
+                ctx.translate(screenX, screenY);
+
+                switch (creature.type) {
+                    case 'coral':
+                        drawCoral(creature, time);
+                        break;
+                    case 'seaweed':
+                        drawSeaweed(creature, time);
+                        break;
+                    case 'starfish':
+                        drawStarfish(creature);
+                        break;
+                    case 'shell':
+                        drawShell(creature);
+                        break;
+                    case 'anemone':
+                        drawAnemone(creature, time);
+                        break;
+                    case 'rock':
+                        drawRock(creature);
+                        break;
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function drawCoral(c, time) {
+            ctx.fillStyle = c.color;
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI - Math.PI / 2;
+                const branchLength = c.size * (0.6 + Math.sin(time + c.phase + i) * 0.1);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.quadraticCurveTo(
+                    Math.cos(angle) * branchLength * 0.5,
+                    Math.sin(angle) * branchLength * 0.5 - 10,
+                    Math.cos(angle) * branchLength,
+                    Math.sin(angle) * branchLength
+                );
+                ctx.lineWidth = 8;
+                ctx.strokeStyle = c.color;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(Math.cos(angle) * branchLength, Math.sin(angle) * branchLength, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawSeaweed(c, time) {
+            ctx.strokeStyle = c.color;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+
+            const segments = 5;
+            for (let i = 1; i <= segments; i++) {
+                const y = -i * (c.size / segments);
+                const x = Math.sin(time * 2 + c.phase + i * 0.5) * 10;
+                ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Leaves
+            for (let i = 1; i < segments; i++) {
+                const y = -i * (c.size / segments);
+                const x = Math.sin(time * 2 + c.phase + i * 0.5) * 10;
+                ctx.beginPath();
+                ctx.ellipse(x + 8, y, 6, 3, 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = c.color;
+                ctx.fill();
+            }
+        }
+
+        function drawStarfish(c) {
+            ctx.fillStyle = c.color;
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+                const outerX = Math.cos(angle) * c.size * 0.5;
+                const outerY = Math.sin(angle) * c.size * 0.5;
+                const innerAngle = angle + Math.PI / 5;
+                const innerX = Math.cos(innerAngle) * c.size * 0.2;
+                const innerY = Math.sin(innerAngle) * c.size * 0.2;
+
+                if (i === 0) ctx.moveTo(outerX, outerY);
+                else ctx.lineTo(outerX, outerY);
+                ctx.lineTo(innerX, innerY);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawShell(c) {
+            ctx.fillStyle = c.color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, c.size * 0.4, c.size * 0.25, 0, 0, Math.PI);
+            ctx.fill();
+
+            // Shell ridges
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.arc(0, c.size * 0.1, c.size * 0.15 + i * 4, Math.PI, 0);
+                ctx.stroke();
+            }
+        }
+
+        function drawAnemone(c, time) {
+            // Base
+            ctx.fillStyle = '#654';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, c.size * 0.3, c.size * 0.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tentacles
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const wave = Math.sin(time * 3 + c.phase + i * 0.5) * 5;
+                ctx.strokeStyle = c.color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * 5, -5);
+                ctx.quadraticCurveTo(
+                    Math.cos(angle) * c.size * 0.3 + wave,
+                    -c.size * 0.4,
+                    Math.cos(angle) * c.size * 0.4 + wave * 2,
+                    -c.size * 0.6
+                );
+                ctx.stroke();
+            }
+        }
+
+        function drawRock(c) {
+            ctx.fillStyle = '#555';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, c.size * 0.5, c.size * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#444';
+            ctx.beginPath();
+            ctx.ellipse(-5, -5, c.size * 0.3, c.size * 0.2, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Draw direction signs
+        function drawSigns() {
+            const time = Date.now() / 1000;
+            ctx.font = 'bold 16px Georgia';
+
+            for (const sign of signs) {
+                const screenX = sign.x - camera.x;
+                const screenY = sign.y - camera.y;
+
+                if (screenX < -100 || screenX > screenWidth + 100 ||
+                    screenY < -100 || screenY > screenHeight + 100) continue;
+
+                const wobble = Math.sin(time * 2 + sign.wobble) * 3;
+
+                ctx.save();
+                ctx.translate(screenX, screenY + wobble);
+
+                // Sign post
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(-3, 0, 6, 40);
+
+                // Sign board
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(-45, -25, 90, 30);
+                ctx.strokeStyle = '#5C3317';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-45, -25, 90, 30);
+
+                // Text
+                ctx.fillStyle = '#FFE4B5';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                if (sign.type === 'right') {
+                    ctx.fillText('Go Right →', 0, -10);
+                } else {
+                    ctx.fillText('Go Above ↑', 0, -10);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // Draw fish
+        function drawFish() {
+            for (const f of fish) {
+                const screenX = f.x - camera.x;
+                const screenY = f.y - camera.y;
+
+                if (screenX < -50 || screenX > screenWidth + 50 ||
+                    screenY < -50 || screenY > screenHeight + 50) continue;
+
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                ctx.scale(f.direction, 1);
+
+                // Body
+                ctx.fillStyle = f.color;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, f.size, f.size * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Tail
+                const tailWag = Math.sin(f.tailPhase) * 0.3;
+                ctx.beginPath();
+                ctx.moveTo(-f.size * 0.8, 0);
+                ctx.lineTo(-f.size * 1.3, -f.size * 0.4 + tailWag * 10);
+                ctx.lineTo(-f.size * 1.3, f.size * 0.4 + tailWag * 10);
+                ctx.closePath();
+                ctx.fill();
+
+                // Eye
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(f.size * 0.5, -f.size * 0.1, f.size * 0.15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(f.size * 0.55, -f.size * 0.1, f.size * 0.08, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // Draw bubbles
+        function drawBubbles() {
+            for (const b of bubbles) {
+                const screenX = b.x - camera.x;
+                const screenY = b.y - camera.y;
+
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, b.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Highlight
+                ctx.beginPath();
+                ctx.arc(screenX - b.size * 0.3, screenY - b.size * 0.3, b.size * 0.2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fill();
+            }
+        }
+
+        // Draw toxic bubbles (green, glowing)
+        function drawToxicBubbles() {
+            for (const b of toxicBubbles) {
+                const screenX = b.x - camera.x;
+                const screenY = b.y - camera.y;
+
+                // Glow effect
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, b.size * 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 255, 0, ${0.2 * b.life})`;
+                ctx.fill();
+
+                // Bubble
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, b.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(50, 255, 50, ${0.5 * b.life})`;
+                ctx.fill();
+                ctx.strokeStyle = `rgba(0, 200, 0, ${0.7 * b.life})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Toxic symbol inside larger bubbles
+                if (b.size > 7) {
+                    ctx.fillStyle = `rgba(0, 100, 0, ${0.8 * b.life})`;
+                    ctx.font = `${b.size}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('☠', screenX, screenY);
+                }
+            }
+        }
+
+        // Draw pollution overlay on deep water
+        function drawPollutionOverlay() {
+            if (!pollutionActive || pollutionLevel <= 0) return;
+
+            const time = Date.now() / 1000;
+
+            // Draw irregular poison clouds
+            for (const cloud of poisonClouds) {
+                const screenX = cloud.x - camera.x;
+                const screenY = cloud.y - camera.y;
+
+                // Skip if not visible
+                if (screenX + cloud.radius < 0 || screenX - cloud.radius > screenWidth ||
+                    screenY + cloud.radius < 0 || screenY - cloud.radius > screenHeight) {
+                    continue;
+                }
+
+                // Wobble effect for irregular shape
+                const wobble = Math.sin(cloud.wobblePhase) * 20;
+
+                // Draw multiple overlapping circles for blobby effect
+                ctx.save();
+                ctx.globalAlpha = cloud.opacity * pollutionLevel;
+
+                // Main poison cloud - radial gradient for depth
+                const gradient = ctx.createRadialGradient(
+                    screenX, screenY, 0,
+                    screenX, screenY, cloud.radius + wobble
+                );
+                gradient.addColorStop(0, 'rgba(0, 100, 30, 0.6)');
+                gradient.addColorStop(0.4, 'rgba(0, 80, 20, 0.4)');
+                gradient.addColorStop(0.7, 'rgba(0, 60, 10, 0.2)');
+                gradient.addColorStop(1, 'rgba(0, 40, 5, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, cloud.radius + wobble, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Add some "blobby" protrusions for irregular shape
+                const numBlobs = 5;
+                for (let i = 0; i < numBlobs; i++) {
+                    const angle = (i / numBlobs) * Math.PI * 2 + cloud.wobblePhase * 0.3;
+                    const blobDist = cloud.radius * 0.6;
+                    const blobX = screenX + Math.cos(angle) * blobDist;
+                    const blobY = screenY + Math.sin(angle) * blobDist;
+                    const blobRadius = cloud.radius * 0.4 + Math.sin(time + i + cloud.wobblePhase) * 20;
+
+                    const blobGradient = ctx.createRadialGradient(
+                        blobX, blobY, 0,
+                        blobX, blobY, blobRadius
+                    );
+                    blobGradient.addColorStop(0, 'rgba(0, 120, 40, 0.4)');
+                    blobGradient.addColorStop(1, 'rgba(0, 60, 20, 0)');
+
+                    ctx.fillStyle = blobGradient;
+                    ctx.beginPath();
+                    ctx.arc(blobX, blobY, blobRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Floating toxic particles within cloud
+                ctx.fillStyle = `rgba(100, 255, 100, 0.5)`;
+                const numParticles = 8;
+                for (let i = 0; i < numParticles; i++) {
+                    const particleAngle = (i / numParticles) * Math.PI * 2 + time * 0.5;
+                    const particleDist = Math.sin(time * 2 + i) * cloud.radius * 0.4 + cloud.radius * 0.3;
+                    const particleX = screenX + Math.cos(particleAngle) * particleDist;
+                    const particleY = screenY + Math.sin(particleAngle) * particleDist;
+                    const particleSize = 2 + Math.sin(time * 3 + i) * 1.5;
+
+                    ctx.beginPath();
+                    ctx.arc(particleX, particleY, particleSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // Draw mermaid
+        function drawMermaid() {
+            const screenX = player.x - camera.x;
+            const screenY = player.y - camera.y;
+
+            ctx.save();
+            ctx.translate(screenX, screenY);
+
+            // Flip horizontally when facing left
+            if (!player.facingRight) {
+                ctx.scale(-1, 1);
+            }
+
+            const tailSwing = Math.sin(player.tailPhase) * 15;
+            const hairFloat = Math.sin(player.hairPhase) * 5;
+
+            // Tail
+            ctx.fillStyle = '#2E8B57';
+            ctx.beginPath();
+            ctx.moveTo(-10, 10);
+            ctx.quadraticCurveTo(-40, 10 + tailSwing * 0.5, -60, tailSwing);
+            ctx.quadraticCurveTo(-40, 10 - tailSwing * 0.5, -10, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Tail fin
+            ctx.fillStyle = '#20B2AA';
+            ctx.beginPath();
+            ctx.moveTo(-55, tailSwing);
+            ctx.quadraticCurveTo(-75, tailSwing - 20, -80, tailSwing - 15);
+            ctx.quadraticCurveTo(-70, tailSwing, -80, tailSwing + 15);
+            ctx.quadraticCurveTo(-75, tailSwing + 20, -55, tailSwing);
+            ctx.fill();
+
+            // Scales shimmer
+            ctx.fillStyle = 'rgba(100, 200, 180, 0.3)';
+            for (let i = 0; i < 5; i++) {
+                const scaleX = -15 - i * 10;
+                const scaleY = 5 + Math.sin(player.tailPhase + i) * 3;
+                ctx.beginPath();
+                ctx.arc(scaleX, scaleY, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Body/torso
+            ctx.fillStyle = '#FFE4C4';
+            ctx.beginPath();
+            ctx.ellipse(5, 0, 20, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Shell top
+            ctx.fillStyle = '#FF69B4';
+            ctx.beginPath();
+            ctx.arc(0, -5, 8, Math.PI, 0);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(10, -5, 8, Math.PI, 0);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = '#FFE4C4';
+            ctx.beginPath();
+            ctx.arc(20, -15, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hair
+            ctx.fillStyle = '#FF6347';
+            ctx.beginPath();
+            ctx.moveTo(25, -25);
+            ctx.quadraticCurveTo(35 + hairFloat, -30, 30 + hairFloat, -15);
+            ctx.quadraticCurveTo(40 + hairFloat, -20, 35 + hairFloat * 0.5, -5);
+            ctx.quadraticCurveTo(30, -10, 25, -15);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(15, -25);
+            ctx.quadraticCurveTo(10 - hairFloat, -35, 5 - hairFloat, -20);
+            ctx.quadraticCurveTo(0 - hairFloat, -25, 5 - hairFloat * 0.5, -10);
+            ctx.quadraticCurveTo(10, -15, 15, -15);
+            ctx.fill();
+
+            // Face
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(23, -17, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Smile
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(22, -12, 4, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+
+            // Arm
+            ctx.fillStyle = '#FFE4C4';
+            ctx.beginPath();
+            ctx.ellipse(25, 5, 15, 5, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Draw bank
+        function drawBank() {
+            const time = Date.now() / 1000;
+
+            // Beach starts gradually sloping from this X position
+            // This is VISUAL ONLY - player boundaries are unchanged
+            const slopeStartX = worldWidth - 3000; // Start of gradual slope (bigger!)
+            const beachTopX = worldWidth - 200;   // Where beach meets water surface
+            const waterSurfaceScreenY = WATER_SURFACE_Y - camera.y;
+            const seaFloorY = worldHeight - 80;
+
+            // Convert to screen coordinates
+            const slopeStartScreenX = slopeStartX - camera.x;
+            const beachTopScreenX = beachTopX - camera.x;
+            const seaFloorScreenY = seaFloorY - camera.y;
+
+            // Only draw if any part is visible
+            if (slopeStartScreenX < screenWidth) {
+
+                // === UNDERWATER SECTION (Cross-section view) ===
+
+                // Gradual sandy slope underwater - use bezier for smoother, longer curve
+                ctx.fillStyle = '#c2b280'; // Sandy color
+                ctx.beginPath();
+                // Start from sea floor at slope start
+                ctx.moveTo(Math.max(0, slopeStartScreenX), seaFloorScreenY);
+                // Gradual bezier curve up to water surface at beach (smoother for long slope)
+                ctx.bezierCurveTo(
+                    slopeStartScreenX + (beachTopScreenX - slopeStartScreenX) * 0.4,
+                    seaFloorScreenY - 50,
+                    slopeStartScreenX + (beachTopScreenX - slopeStartScreenX) * 0.7,
+                    seaFloorScreenY - (seaFloorScreenY - waterSurfaceScreenY) * 0.6,
+                    beachTopScreenX,
+                    waterSurfaceScreenY
+                );
+                // Continue to right edge at water surface
+                ctx.lineTo(screenWidth, waterSurfaceScreenY);
+                // Down to sea floor on right
+                ctx.lineTo(screenWidth, seaFloorScreenY);
+                // Back to start
+                ctx.lineTo(Math.max(0, slopeStartScreenX), seaFloorScreenY);
+                ctx.closePath();
+                ctx.fill();
+
+                // Darker layer underneath (soil/rock cross-section)
+                ctx.fillStyle = '#8B7355';
+                ctx.beginPath();
+                ctx.moveTo(Math.max(0, slopeStartScreenX), seaFloorScreenY);
+                ctx.lineTo(Math.max(0, slopeStartScreenX), screenHeight);
+                ctx.lineTo(screenWidth, screenHeight);
+                ctx.lineTo(screenWidth, seaFloorScreenY);
+                ctx.closePath();
+                ctx.fill();
+
+                // Rock/sediment layers in cross-section
+                ctx.fillStyle = '#6B5344';
+                ctx.beginPath();
+                ctx.moveTo(Math.max(0, slopeStartScreenX), seaFloorScreenY + 30);
+                ctx.lineTo(screenWidth, seaFloorScreenY + 30);
+                ctx.lineTo(screenWidth, seaFloorScreenY + 50);
+                ctx.lineTo(Math.max(0, slopeStartScreenX), seaFloorScreenY + 50);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#5C4A3A';
+                ctx.beginPath();
+                ctx.moveTo(Math.max(0, slopeStartScreenX), seaFloorScreenY + 70);
+                ctx.lineTo(screenWidth, seaFloorScreenY + 70);
+                ctx.lineTo(screenWidth, screenHeight);
+                ctx.lineTo(Math.max(0, slopeStartScreenX), screenHeight);
+                ctx.closePath();
+                ctx.fill();
+
+                // Small rocks/pebbles on the slope (more of them for bigger slope)
+                ctx.fillStyle = '#9a8a7a';
+                for (let i = 0; i < 40; i++) {
+                    const rockProgress = i / 40;
+                    const rockX = slopeStartScreenX + rockProgress * (beachTopScreenX - slopeStartScreenX);
+                    // Calculate Y position on slope using same bezier approximation
+                    const t = rockProgress;
+                    const slopeY = seaFloorScreenY * (1-t)*(1-t)*(1-t) +
+                                   (seaFloorScreenY - 50) * 3*(1-t)*(1-t)*t +
+                                   (seaFloorScreenY - (seaFloorScreenY - waterSurfaceScreenY) * 0.6) * 3*(1-t)*t*t +
+                                   waterSurfaceScreenY * t*t*t;
+                    const rockY = slopeY - 5 - Math.random() * 15;
+
+                    if (rockX > 0 && rockX < screenWidth) {
+                        ctx.beginPath();
+                        ctx.ellipse(rockX, rockY, 6 + Math.random() * 10, 4 + Math.random() * 6, Math.random(), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Shells on slope (more of them)
+                ctx.fillStyle = '#ffe4c4';
+                for (let i = 0; i < 20; i++) {
+                    const shellProgress = Math.random();
+                    const shellX = slopeStartScreenX + shellProgress * (beachTopScreenX - slopeStartScreenX);
+                    const t = shellProgress;
+                    const slopeY = seaFloorScreenY * (1-t)*(1-t)*(1-t) +
+                                   (seaFloorScreenY - 50) * 3*(1-t)*(1-t)*t +
+                                   (seaFloorScreenY - (seaFloorScreenY - waterSurfaceScreenY) * 0.6) * 3*(1-t)*t*t +
+                                   waterSurfaceScreenY * t*t*t;
+                    const shellY = slopeY - 3;
+
+                    if (shellX > 0 && shellX < screenWidth) {
+                        ctx.beginPath();
+                        ctx.arc(shellX, shellY, 4, Math.PI, 0);
+                        ctx.fill();
+                    }
+                }
+
+                // Seaweed patches on lower part of slope
+                ctx.fillStyle = '#2d5a3d';
+                for (let i = 0; i < 15; i++) {
+                    const weedProgress = Math.random() * 0.4; // Only on lower 40% of slope
+                    const weedX = slopeStartScreenX + weedProgress * (beachTopScreenX - slopeStartScreenX);
+                    const t = weedProgress;
+                    const slopeY = seaFloorScreenY * (1-t)*(1-t)*(1-t) +
+                                   (seaFloorScreenY - 50) * 3*(1-t)*(1-t)*t +
+                                   (seaFloorScreenY - (seaFloorScreenY - waterSurfaceScreenY) * 0.6) * 3*(1-t)*t*t +
+                                   waterSurfaceScreenY * t*t*t;
+
+                    if (weedX > 0 && weedX < screenWidth) {
+                        // Draw seaweed strand
+                        ctx.beginPath();
+                        ctx.moveTo(weedX, slopeY);
+                        const weedHeight = 20 + Math.random() * 30;
+                        const sway = Math.sin(time * 2 + i) * 5;
+                        ctx.quadraticCurveTo(weedX + sway, slopeY - weedHeight/2, weedX + sway * 1.5, slopeY - weedHeight);
+                        ctx.quadraticCurveTo(weedX + sway, slopeY - weedHeight/2, weedX + 3, slopeY);
+                        ctx.fill();
+                    }
+                }
+
+                // === ABOVE WATER SECTION (Side view) ===
+
+                if (waterSurfaceScreenY > 0) {
+                    // Beach/land above water
+                    ctx.fillStyle = '#c2b280';
+                    ctx.beginPath();
+                    ctx.moveTo(beachTopScreenX, waterSurfaceScreenY);
+                    ctx.lineTo(beachTopScreenX + 50, waterSurfaceScreenY - 30); // Slight rise
+                    ctx.lineTo(screenWidth, waterSurfaceScreenY - 30);
+                    ctx.lineTo(screenWidth, waterSurfaceScreenY);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Grass layer on top
+                    ctx.fillStyle = '#228B22';
+                    ctx.fillRect(beachTopScreenX + 60, waterSurfaceScreenY - 45, screenWidth - beachTopScreenX - 60, 15);
+
+                    // Dark soil cross-section view above water
+                    ctx.fillStyle = '#5C4030';
+                    ctx.beginPath();
+                    ctx.moveTo(beachTopScreenX + 50, waterSurfaceScreenY - 30);
+                    ctx.lineTo(screenWidth, waterSurfaceScreenY - 30);
+                    ctx.lineTo(screenWidth, 0);
+                    ctx.lineTo(beachTopScreenX + 100, 0);
+                    ctx.lineTo(beachTopScreenX + 50, waterSurfaceScreenY - 30);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Grass tufts on top (side view)
+                    const grassBaseY = waterSurfaceScreenY - 45;
+                    for (let x = beachTopScreenX + 70; x < screenWidth; x += 15) {
+                        if (x > 0) {
+                            ctx.fillStyle = '#2d8f2d';
+                            // Grass blades
+                            for (let j = 0; j < 3; j++) {
+                                const bladeX = x + j * 4;
+                                const bladeHeight = 15 + Math.sin(time * 2 + x * 0.1) * 3 + Math.random() * 10;
+                                const sway = Math.sin(time * 3 + x * 0.05) * 3;
+
+                                ctx.beginPath();
+                                ctx.moveTo(bladeX, grassBaseY);
+                                ctx.quadraticCurveTo(bladeX + sway, grassBaseY - bladeHeight / 2, bladeX + sway * 1.5, grassBaseY - bladeHeight);
+                                ctx.quadraticCurveTo(bladeX + sway, grassBaseY - bladeHeight / 2, bladeX + 2, grassBaseY);
+                                ctx.fill();
+                            }
+                        }
+                    }
+
+                    // Tree on the bank (side view)
+                    const treeX = beachTopScreenX + 120;
+                    const treeBaseY = waterSurfaceScreenY - 45;
+
+                    if (treeX > 0 && treeX < screenWidth) {
+                        // Tree trunk
+                        ctx.fillStyle = '#5D4037';
+                        ctx.fillRect(treeX - 8, treeBaseY - 80, 16, 80);
+
+                        // Tree crown (foliage)
+                        ctx.fillStyle = '#1B5E20';
+                        ctx.beginPath();
+                        ctx.arc(treeX, treeBaseY - 100, 35, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(treeX - 25, treeBaseY - 85, 25, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(treeX + 25, treeBaseY - 85, 25, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(treeX, treeBaseY - 130, 28, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Second tree
+                    const tree2X = beachTopScreenX + 180;
+                    if (tree2X > 0 && tree2X < screenWidth) {
+                        ctx.fillStyle = '#4E342E';
+                        ctx.fillRect(tree2X - 6, treeBaseY - 60, 12, 60);
+
+                        ctx.fillStyle = '#2E7D32';
+                        ctx.beginPath();
+                        ctx.arc(tree2X, treeBaseY - 75, 28, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(tree2X - 18, treeBaseY - 65, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(tree2X + 18, treeBaseY - 65, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Evil lab building in background
+                    const labX = beachTopScreenX + 250;
+                    if (labX > -100 && labX < screenWidth + 100) {
+                        // Building body
+                        ctx.fillStyle = '#3a3a3a';
+                        ctx.fillRect(labX, treeBaseY - 120, 100, 120);
+
+                        // Roof
+                        ctx.fillStyle = '#2a2a2a';
+                        ctx.beginPath();
+                        ctx.moveTo(labX - 10, treeBaseY - 120);
+                        ctx.lineTo(labX + 50, treeBaseY - 160);
+                        ctx.lineTo(labX + 110, treeBaseY - 120);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // Windows (glowing ominously)
+                        ctx.fillStyle = '#0f0';
+                        ctx.globalAlpha = 0.7 + Math.sin(time * 2) * 0.3;
+                        ctx.fillRect(labX + 15, treeBaseY - 100, 25, 25);
+                        ctx.fillRect(labX + 60, treeBaseY - 100, 25, 25);
+                        ctx.fillRect(labX + 15, treeBaseY - 60, 25, 25);
+                        ctx.fillRect(labX + 60, treeBaseY - 60, 25, 25);
+                        ctx.globalAlpha = 1;
+
+                        // Door
+                        ctx.fillStyle = '#1a1a1a';
+                        ctx.fillRect(labX + 38, treeBaseY - 40, 24, 40);
+
+                        // Smoke stack
+                        ctx.fillStyle = '#4a4a4a';
+                        ctx.fillRect(labX + 70, treeBaseY - 180, 15, 60);
+
+                        // Toxic smoke
+                        ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+                        for (let i = 0; i < 5; i++) {
+                            const smokeY = treeBaseY - 190 - i * 20 - Math.sin(time + i) * 10;
+                            const smokeX = labX + 77 + Math.sin(time * 2 + i) * 10;
+                            ctx.beginPath();
+                            ctx.arc(smokeX, smokeY, 10 + i * 3, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+
+                        // Warning sign
+                        ctx.fillStyle = '#ff0';
+                        ctx.beginPath();
+                        ctx.moveTo(labX - 20, treeBaseY - 30);
+                        ctx.lineTo(labX - 5, treeBaseY - 60);
+                        ctx.lineTo(labX + 10, treeBaseY - 30);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.fillStyle = '#000';
+                        ctx.font = 'bold 16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('!', labX - 5, treeBaseY - 38);
+                    }
+                }
+
+                // Water edge effect with waves - follows the bezier curve
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                // Wave along the slope (more points for smoother curve)
+                for (let i = 0; i <= 50; i++) {
+                    const t = i / 50;
+                    const waveX = slopeStartScreenX + t * (beachTopScreenX - slopeStartScreenX);
+                    // Follow the bezier curve
+                    const baseY = seaFloorScreenY * (1-t)*(1-t)*(1-t) +
+                                  (seaFloorScreenY - 50) * 3*(1-t)*(1-t)*t +
+                                  (seaFloorScreenY - (seaFloorScreenY - waterSurfaceScreenY) * 0.6) * 3*(1-t)*t*t +
+                                  waterSurfaceScreenY * t*t*t;
+                    const wave = Math.sin(t * 20 + time * 3) * 4;
+
+                    if (i === 0) ctx.moveTo(waveX, baseY + wave - 5);
+                    else ctx.lineTo(waveX, baseY + wave - 5);
+                }
+                ctx.stroke();
+
+                // Foam/bubbles near water surface at beach
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                for (let i = 0; i < 15; i++) {
+                    const foamX = beachTopScreenX - 50 + Math.sin(time * 2 + i) * 30;
+                    const foamY = waterSurfaceScreenY + 10 + Math.sin(time * 3 + i * 0.5) * 20;
+                    ctx.beginPath();
+                    ctx.arc(foamX, foamY, 3 + Math.random() * 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Draw scientist (EVIL Dr. Vex)
+        function drawScientist() {
+            const screenX = bankScene.scientist.x - camera.x;
+            const screenY = bankScene.scientist.y - camera.y;
+
+            if (screenX < screenWidth + 100) {
+                ctx.save();
+                ctx.translate(screenX, screenY);
+
+                // Dark lab coat body (evil scientist wears black)
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.moveTo(-20, 0);
+                ctx.lineTo(-25, 80);
+                ctx.lineTo(25, 80);
+                ctx.lineTo(20, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Red trim on coat
+                ctx.strokeStyle = '#8b0000';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-20, 0);
+                ctx.lineTo(-25, 80);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(20, 0);
+                ctx.lineTo(25, 80);
+                ctx.stroke();
+
+                // Legs
+                ctx.fillStyle = '#111';
+                ctx.fillRect(-15, 80, 10, 40);
+                ctx.fillRect(5, 80, 10, 40);
+
+                // Shoes (pointed, villainous)
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.moveTo(-18, 115);
+                ctx.lineTo(-22, 123);
+                ctx.lineTo(-2, 123);
+                ctx.lineTo(-2, 115);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(2, 115);
+                ctx.lineTo(2, 123);
+                ctx.lineTo(22, 123);
+                ctx.lineTo(18, 115);
+                ctx.closePath();
+                ctx.fill();
+
+                // Head
+                ctx.fillStyle = '#d4c4a8';
+                ctx.beginPath();
+                ctx.arc(0, -15, 20, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Bald head with evil widow's peak
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.moveTo(-15, -30);
+                ctx.lineTo(0, -20);
+                ctx.lineTo(15, -30);
+                ctx.lineTo(18, -25);
+                ctx.arc(0, -15, 20, -0.5, Math.PI + 0.5, true);
+                ctx.lineTo(-18, -25);
+                ctx.closePath();
+                ctx.fill();
+
+                // Evil eyebrows (angled down)
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-15, -22);
+                ctx.lineTo(-5, -20);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(15, -22);
+                ctx.lineTo(5, -20);
+                ctx.stroke();
+
+                // Monocle (villains love monocles)
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(8, -15, 9, 0, Math.PI * 2);
+                ctx.stroke();
+                // Monocle chain
+                ctx.beginPath();
+                ctx.moveTo(17, -15);
+                ctx.quadraticCurveTo(25, 0, 20, 20);
+                ctx.stroke();
+
+                // Eyes (menacing squint)
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.ellipse(-8, -15, 3, 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(8, -15, 3, 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Evil grin
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, -10, 8, 0.3, Math.PI - 0.3);
+                ctx.stroke();
+                // Teeth
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(-5, -8, 10, 4);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                for (let i = -4; i <= 4; i += 2) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, -8);
+                    ctx.lineTo(i, -4);
+                    ctx.stroke();
+                }
+
+                // Goatee
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.moveTo(-3, -2);
+                ctx.lineTo(0, 8);
+                ctx.lineTo(3, -2);
+                ctx.closePath();
+                ctx.fill();
+
+                // Evil chemical vial in hand
+                ctx.fillStyle = '#2a0';
+                ctx.fillRect(25, 25, 12, 25);
+                ctx.fillStyle = '#0f0';
+                ctx.fillRect(27, 30, 8, 15);
+                // Bubbles in vial
+                ctx.fillStyle = '#7f7';
+                ctx.beginPath();
+                ctx.arc(31, 35, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(29, 40, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                // Skull symbol on vial
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(31, 37, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Pocket with toxic symbol
+                ctx.fillStyle = '#222';
+                ctx.fillRect(-12, 20, 15, 20);
+                ctx.fillStyle = '#ff0';
+                ctx.beginPath();
+                ctx.moveTo(-4, 22);
+                ctx.lineTo(-9, 32);
+                ctx.lineTo(1, 32);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.font = '8px Arial';
+                ctx.fillText('!', -5, 30);
+
+                ctx.restore();
+            }
+        }
+
+        // Draw robot (EVIL DOOM-7)
+        function drawRobot() {
+            const screenX = bankScene.robot.x - camera.x;
+            const screenY = bankScene.robot.y - camera.y;
+
+            if (screenX < screenWidth + 100) {
+                ctx.save();
+                ctx.translate(screenX, screenY);
+
+                const bobble = Math.sin(Date.now() / 500) * 2;
+                ctx.translate(0, bobble);
+
+                // Body (darker, more menacing)
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(-25, 0, 50, 60);
+
+                // Red warning stripes
+                ctx.fillStyle = '#8b0000';
+                ctx.fillRect(-25, 10, 50, 5);
+                ctx.fillRect(-25, 40, 50, 5);
+
+                // Hazard pattern
+                ctx.fillStyle = '#ff0';
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(-25 + i * 12, 25);
+                    ctx.lineTo(-19 + i * 12, 25);
+                    ctx.lineTo(-25 + i * 12, 35);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Chest - toxic waste container
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.arc(0, 30, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#0f0';
+                ctx.beginPath();
+                ctx.arc(0, 30, 8, 0, Math.PI * 2);
+                ctx.fill();
+                // Radiation symbol
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(0, 30, 3, 0, Math.PI * 2);
+                ctx.fill();
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 30);
+                    ctx.arc(0, 30, 7, i * 2.1, i * 2.1 + 1);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Arms (with claws)
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(-40, 5, 15, 40);
+                ctx.fillRect(25, 5, 15, 40);
+
+                // Sharp claws
+                ctx.fillStyle = '#444';
+                ctx.beginPath();
+                ctx.moveTo(-42, 45);
+                ctx.lineTo(-45, 65);
+                ctx.lineTo(-38, 55);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(-32, 45);
+                ctx.lineTo(-35, 65);
+                ctx.lineTo(-28, 55);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(42, 45);
+                ctx.lineTo(45, 65);
+                ctx.lineTo(38, 55);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(32, 45);
+                ctx.lineTo(35, 65);
+                ctx.lineTo(28, 55);
+                ctx.closePath();
+                ctx.fill();
+
+                // Legs
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(-20, 60, 15, 50);
+                ctx.fillRect(5, 60, 15, 50);
+
+                // Heavy feet
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(-28, 105, 28, 12);
+                ctx.fillRect(0, 105, 28, 12);
+
+                // Head (angular, menacing)
+                ctx.fillStyle = '#2a2a2a';
+                ctx.beginPath();
+                ctx.moveTo(-25, 0);
+                ctx.lineTo(-20, -40);
+                ctx.lineTo(20, -40);
+                ctx.lineTo(25, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                // Evil visor
+                ctx.fillStyle = '#300';
+                ctx.fillRect(-18, -32, 36, 15);
+
+                // Glowing red eyes
+                const eyePulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
+                ctx.fillStyle = `rgba(255, 0, 0, ${eyePulse})`;
+                ctx.beginPath();
+                ctx.arc(-8, -25, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(8, -25, 5, 0, Math.PI * 2);
+                ctx.fill();
+                // Eye glow effect
+                ctx.fillStyle = `rgba(255, 100, 100, ${eyePulse * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(-8, -25, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(8, -25, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Antenna (weapon-like)
+                ctx.fillStyle = '#444';
+                ctx.fillRect(-3, -55, 6, 15);
+                ctx.fillStyle = '#f00';
+                const antennaPulse = Math.sin(Date.now() / 300) * 0.5 + 0.5;
+                ctx.globalAlpha = antennaPulse;
+                ctx.beginPath();
+                ctx.arc(0, -58, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                // Mouth (speaker grille with sinister grin shape)
+                ctx.fillStyle = '#111';
+                ctx.beginPath();
+                ctx.moveTo(-12, -12);
+                ctx.quadraticCurveTo(0, -5, 12, -12);
+                ctx.lineTo(12, -8);
+                ctx.quadraticCurveTo(0, -2, -12, -8);
+                ctx.closePath();
+                ctx.fill();
+                // Red lines in speaker
+                ctx.strokeStyle = '#800';
+                ctx.lineWidth = 1;
+                for (let i = -8; i <= 8; i += 4) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, -11);
+                    ctx.lineTo(i, -6);
+                    ctx.stroke();
+                }
+
+                // "DOOM-7" label
+                ctx.fillStyle = '#f00';
+                ctx.font = 'bold 6px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('DOOM-7', 0, 55);
+
+                ctx.restore();
+            }
+        }
+
+        // Draw minimap
+        function drawMinimap() {
+            const mapWidth = minimapCanvas.width;
+            const mapHeight = minimapCanvas.height;
+
+            // Clear minimap
+            minimapCtx.clearRect(0, 0, mapWidth, mapHeight);
+
+            // Calculate scale
+            const scaleX = mapWidth / worldWidth;
+            const scaleY = mapHeight / worldHeight;
+
+            // Draw sky area on minimap
+            const skyHeightOnMap = SKY_HEIGHT * scaleY;
+            const skyGradient = minimapCtx.createLinearGradient(0, 0, 0, skyHeightOnMap);
+            skyGradient.addColorStop(0, 'rgba(135, 206, 235, 0.8)');
+            skyGradient.addColorStop(1, 'rgba(176, 224, 230, 0.8)');
+            minimapCtx.fillStyle = skyGradient;
+            minimapCtx.fillRect(0, 0, mapWidth, skyHeightOnMap);
+
+            // Draw water area on minimap
+            const waterGradient = minimapCtx.createLinearGradient(0, skyHeightOnMap, 0, mapHeight);
+            if (pollutionActive) {
+                // Polluted water colors
+                waterGradient.addColorStop(0, 'rgba(100, 180, 200, 0.8)'); // Slightly green surface
+                waterGradient.addColorStop(DEEP_WATER_THRESHOLD, `rgba(50, 100, 80, ${0.8 * pollutionLevel + 0.2})`);
+                waterGradient.addColorStop(1, `rgba(10, 60, 30, ${0.9 * pollutionLevel + 0.1})`); // Dark green deep
+            } else {
+                waterGradient.addColorStop(0, 'rgba(100, 180, 220, 0.8)');
+                waterGradient.addColorStop(1, 'rgba(10, 80, 120, 0.8)');
+            }
+            minimapCtx.fillStyle = waterGradient;
+            minimapCtx.fillRect(0, skyHeightOnMap, mapWidth, mapHeight - skyHeightOnMap);
+
+            // Draw poison clouds on minimap
+            if (pollutionActive && poisonClouds.length > 0) {
+                for (const cloud of poisonClouds) {
+                    const cloudMapX = cloud.x * scaleX;
+                    const cloudMapY = cloud.y * scaleY;
+                    const cloudMapRadius = Math.max(2, cloud.radius * scaleX);
+
+                    // Draw poison cloud as a green blob
+                    minimapCtx.fillStyle = `rgba(0, 150, 50, ${cloud.opacity * pollutionLevel * 0.6})`;
+                    minimapCtx.beginPath();
+                    minimapCtx.arc(cloudMapX, cloudMapY, cloudMapRadius, 0, Math.PI * 2);
+                    minimapCtx.fill();
+                }
+            }
+
+            // Draw water surface line
+            minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            minimapCtx.lineWidth = 1;
+            minimapCtx.beginPath();
+            minimapCtx.moveTo(0, skyHeightOnMap);
+            minimapCtx.lineTo(mapWidth, skyHeightOnMap);
+            minimapCtx.stroke();
+
+            // Draw sea floor
+            const floorY = (worldHeight - 80) * scaleY;
+            minimapCtx.fillStyle = 'rgba(139, 115, 85, 0.8)';
+            minimapCtx.fillRect(0, floorY, mapWidth, mapHeight - floorY);
+
+            // Draw beach with gradual slope on minimap (matching the bigger slope)
+            const slopeStartX = (worldWidth - 3000) * scaleX;
+            const beachTopX = (worldWidth - 200) * scaleX;
+
+            // Underwater slope - use bezier curve to match main view
+            minimapCtx.fillStyle = 'rgba(194, 178, 128, 0.9)';
+            minimapCtx.beginPath();
+            minimapCtx.moveTo(slopeStartX, floorY);
+            minimapCtx.bezierCurveTo(
+                slopeStartX + (beachTopX - slopeStartX) * 0.4,
+                floorY - 3,
+                slopeStartX + (beachTopX - slopeStartX) * 0.7,
+                floorY - (floorY - skyHeightOnMap) * 0.6,
+                beachTopX,
+                skyHeightOnMap
+            );
+            minimapCtx.lineTo(mapWidth, skyHeightOnMap);
+            minimapCtx.lineTo(mapWidth, floorY);
+            minimapCtx.lineTo(slopeStartX, floorY);
+            minimapCtx.closePath();
+            minimapCtx.fill();
+
+            // Above water land (darker brown/green)
+            minimapCtx.fillStyle = 'rgba(100, 140, 80, 0.9)';
+            minimapCtx.fillRect(beachTopX, 0, mapWidth - beachTopX, skyHeightOnMap);
+
+            // Evil lab marker
+            minimapCtx.fillStyle = 'rgba(60, 60, 60, 0.9)';
+            const labX = (worldWidth - 200 + 250) * scaleX;
+            minimapCtx.fillRect(labX, skyHeightOnMap - 8, 8, 8);
+
+            // Draw direction signs as small dots
+            minimapCtx.fillStyle = 'rgba(139, 69, 19, 0.6)';
+            for (const sign of signs) {
+                const signX = sign.x * scaleX;
+                const signY = sign.y * scaleY;
+                minimapCtx.beginPath();
+                minimapCtx.arc(signX, signY, 2, 0, Math.PI * 2);
+                minimapCtx.fill();
+            }
+
+            // Draw camera viewport
+            const viewX = camera.x * scaleX;
+            const viewY = camera.y * scaleY;
+            const viewW = screenWidth * scaleX;
+            const viewH = screenHeight * scaleY;
+            minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.strokeRect(viewX, viewY, viewW, viewH);
+
+            // Draw player on minimap
+            const playerMapX = player.x * scaleX;
+            const playerMapY = player.y * scaleY;
+
+            // Player glow
+            minimapCtx.fillStyle = 'rgba(32, 178, 170, 0.5)';
+            minimapCtx.beginPath();
+            minimapCtx.arc(playerMapX, playerMapY, 6, 0, Math.PI * 2);
+            minimapCtx.fill();
+
+            // Player dot
+            minimapCtx.fillStyle = '#20B2AA';
+            minimapCtx.beginPath();
+            minimapCtx.arc(playerMapX, playerMapY, 4, 0, Math.PI * 2);
+            minimapCtx.fill();
+
+            // Draw scientist and robot if visible
+            if (bankScene.triggered || player.x > worldWidth - 500) {
+                // Scientist
+                minimapCtx.fillStyle = '#FFD700';
+                minimapCtx.beginPath();
+                minimapCtx.arc(bankScene.scientist.x * scaleX, bankScene.scientist.y * scaleY, 3, 0, Math.PI * 2);
+                minimapCtx.fill();
+
+                // Robot
+                minimapCtx.fillStyle = '#708090';
+                minimapCtx.beginPath();
+                minimapCtx.arc(bankScene.robot.x * scaleX, bankScene.robot.y * scaleY, 3, 0, Math.PI * 2);
+                minimapCtx.fill();
+            }
+
+            // Draw destination marker (arrow pointing right)
+            minimapCtx.fillStyle = 'rgba(255, 215, 0, 0.8)';
+            minimapCtx.font = '12px Georgia';
+            minimapCtx.textAlign = 'center';
+            minimapCtx.fillText('★', beachTopX - 5, mapHeight / 2);
+        }
+
+        // Main game loop
+        function gameLoop(timestamp) {
+            const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
+            lastTimestamp = timestamp;
+
+            // Update
+            updateTime(deltaTime);
+            updatePlayer(deltaTime);
+            updateCamera();
+            updateBubbles(deltaTime);
+            updateFish(deltaTime);
+            updateLightRays(deltaTime);
+            updateToxicBubbles(deltaTime);
+            updatePoisonClouds(deltaTime);
+
+            // Draw
+            drawSky();
+            drawWaterBackground();
+            drawPollutionOverlay(); // Draw pollution effect on deep water
+            drawLightRays();
+            drawSeaFloor();
+            drawSeaCreatures();
+            drawFish();
+            drawSigns();
+            drawBubbles();
+            drawToxicBubbles(); // Draw toxic bubbles
+            drawBank();
+
+            if (bankScene.triggered || player.x > worldWidth - 500) {
+                drawScientist();
+                drawRobot();
+            }
+
+            drawMermaid();
+
+            // Draw minimap
+            drawMinimap();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start game
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

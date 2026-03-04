@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benji's Obby - 3D Platformer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* HUD Overlay */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hud-box {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            backdrop-filter: blur(5px);
+        }
+
+        .hud-label {
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            font-size: 28px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        #stage-display .hud-value {
+            color: #4ade80;
+        }
+
+        #timer-display .hud-value {
+            color: #60a5fa;
+        }
+
+        /* Start Screen */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #start-screen h1 {
+            font-size: 64px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+            margin-bottom: 20px;
+        }
+
+        #start-screen p {
+            color: #aaa;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+
+        #start-btn {
+            padding: 20px 60px;
+            font-size: 24px;
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        #start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(74, 222, 128, 0.5);
+        }
+
+        .controls-info {
+            margin-top: 40px;
+            color: #666;
+            text-align: center;
+        }
+
+        .controls-info kbd {
+            background: #333;
+            padding: 5px 12px;
+            border-radius: 5px;
+            margin: 0 5px;
+            color: #fff;
+        }
+
+        /* Win Screen */
+        #win-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #win-screen h1 {
+            font-size: 72px;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+            margin-bottom: 20px;
+        }
+
+        #win-screen .final-time {
+            font-size: 36px;
+            color: #fff;
+            margin-bottom: 40px;
+        }
+
+        #restart-btn {
+            padding: 15px 50px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            border: none;
+            border-radius: 50px;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: bold;
+        }
+
+        #restart-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Death message */
+        #death-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 38, 38, 0.9);
+            padding: 20px 40px;
+            border-radius: 10px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: none;
+            z-index: 50;
+        }
+
+        /* Checkpoint notification */
+        #checkpoint-popup {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.9) 100%);
+            padding: 15px 40px;
+            border-radius: 50px;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            display: none;
+            z-index: 50;
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+
+        /* Speed boost indicator */
+        #speed-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(249, 115, 22, 0.9);
+            padding: 10px 30px;
+            border-radius: 25px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            display: none;
+            z-index: 50;
+        }
+
+        /* Sound toggle button */
+        #sound-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 60;
+            transition: transform 0.2s;
+            pointer-events: auto;
+        }
+
+        #sound-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        /* Confetti container */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            z-index: 200;
+            animation: confettiFall 3s linear forwards;
+        }
+
+        @keyframes confettiFall {
+            to {
+                top: 100vh;
+                transform: rotate(720deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <h1>🎮 Benji's Obby</h1>
+            <p>A Roblox-style 3D Platformer</p>
+            <button id="start-btn">PLAY</button>
+            <div class="controls-info">
+                <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to move</p>
+                <p><kbd>SPACE</kbd> to jump</p>
+                <p><kbd>SHIFT</kbd> to sprint</p>
+            </div>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="win-screen">
+            <h1>🏆 YOU WIN!</h1>
+            <p class="final-time">Time: <span id="final-time">0:00.00</span></p>
+            <button id="restart-btn">PLAY AGAIN</button>
+        </div>
+
+        <!-- Death Message -->
+        <div id="death-message">You died! Respawning...</div>
+
+        <!-- Checkpoint Popup -->
+        <div id="checkpoint-popup">Checkpoint!</div>
+
+        <!-- Speed Indicator -->
+        <div id="speed-indicator">SPEED BOOST!</div>
+
+        <!-- Sound Toggle (outside HUD so it's clickable) -->
+        <button id="sound-toggle">🔊</button>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-box" id="stage-display">
+                <div class="hud-label">Stage</div>
+                <div class="hud-value"><span id="current-stage">1</span> / <span id="total-stages">10</span></div>
+            </div>
+            <div class="hud-box" id="timer-display">
+                <div class="hud-label">Time</div>
+                <div class="hud-value" id="timer">0:00.00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // ============================================
+        // GAME CONFIGURATION
+        // ============================================
+        const CONFIG = {
+            // Player settings
+            playerSpeed: 8,
+            sprintMultiplier: 1.6,
+            jumpForce: 12,
+            gravity: 30,
+            bounceForce: 28,      // Bounce pad jump force (higher = bigger bounce!)
+            speedBoostMultiplier: 2.0,
+            speedBoostDuration: 2000, // ms
+
+            // World settings
+            fallDeathY: -20,
+
+            // Colors (Roblox-style)
+            colors: {
+                player: 0x4ade80,      // Green
+                platform: 0x6b7280,    // Gray
+                checkpoint: 0x22c55e,  // Bright green
+                checkpointActive: 0xfbbf24, // Yellow/gold
+                killBrick: 0xdc2626,   // Red
+                finishLine: 0xffd700,  // Gold
+                moving: 0x3b82f6,      // Blue
+                bouncy: 0xf97316,      // Orange - bounce pads
+                speedBoost: 0x06b6d4,  // Cyan - speed boost
+                sky: 0x87ceeb,         // Sky blue
+                ground: 0x22c55e       // Green ground
+            }
+        };
+
+        // ============================================
+        // SOUND SYSTEM
+        // ============================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            switch(type) {
+                case 'jump':
+                    oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                    break;
+
+                case 'checkpoint':
+                    oscillator.frequency.setValueAtTime(523, audioCtx.currentTime);
+                    oscillator.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1);
+                    oscillator.frequency.setValueAtTime(784, audioCtx.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.4);
+                    break;
+
+                case 'death':
+                    oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.3);
+                    break;
+
+                case 'win':
+                    const notes = [523, 659, 784, 1047];
+                    notes.forEach((freq, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.15);
+                        gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.15);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.3);
+                        osc.start(audioCtx.currentTime + i * 0.15);
+                        osc.stop(audioCtx.currentTime + i * 0.15 + 0.3);
+                    });
+                    return;
+
+                case 'bounce':
+                    oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.15);
+                    gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.15);
+                    break;
+
+                case 'speedBoost':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.2);
+                    break;
+            }
+        }
+
+        // Toggle sound
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊' : '🔇';
+        });
+
+        // ============================================
+        // GAME STATE
+        // ============================================
+        const gameState = {
+            isPlaying: false,
+            currentCheckpoint: 0,
+            startTime: 0,
+            elapsedTime: 0,
+            isDead: false,
+            hasSpeedBoost: false,
+            speedBoostEndTime: 0
+        };
+
+        // ============================================
+        // THREE.JS SETUP
+        // ============================================
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(CONFIG.colors.sky);
+        scene.fog = new THREE.Fog(CONFIG.colors.sky, 50, 200);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('game-container').appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 100, 50);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 500;
+        directionalLight.shadow.camera.left = -100;
+        directionalLight.shadow.camera.right = 100;
+        directionalLight.shadow.camera.top = 100;
+        directionalLight.shadow.camera.bottom = -100;
+        scene.add(directionalLight);
+
+        // ============================================
+        // PLAYER
+        // ============================================
+        const player = {
+            mesh: null,
+            velocity: new THREE.Vector3(),
+            isGrounded: false,
+            canJump: true,
+
+            create() {
+                // Roblox-style blocky character
+                const group = new THREE.Group();
+
+                // Body
+                const bodyGeo = new THREE.BoxGeometry(1, 1.5, 0.6);
+                const bodyMat = new THREE.MeshLambertMaterial({ color: CONFIG.colors.player });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 0.75;
+                body.castShadow = true;
+                group.add(body);
+
+                // Head
+                const headGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+                const headMat = new THREE.MeshLambertMaterial({ color: 0xffdbac }); // Skin color
+                const head = new THREE.Mesh(headGeo, headMat);
+                head.position.y = 1.9;
+                head.castShadow = true;
+                group.add(head);
+
+                // Eyes
+                const eyeGeo = new THREE.BoxGeometry(0.15, 0.15, 0.1);
+                const eyeMat = new THREE.MeshLambertMaterial({ color: 0x000000 });
+                const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+                leftEye.position.set(-0.2, 2, 0.4);
+                group.add(leftEye);
+                const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+                rightEye.position.set(0.2, 2, 0.4);
+                group.add(rightEye);
+
+                // Arms
+                const armGeo = new THREE.BoxGeometry(0.3, 1.2, 0.3);
+                const armMat = new THREE.MeshLambertMaterial({ color: CONFIG.colors.player });
+                const leftArm = new THREE.Mesh(armGeo, armMat);
+                leftArm.position.set(-0.65, 0.6, 0);
+                leftArm.castShadow = true;
+                group.add(leftArm);
+                const rightArm = new THREE.Mesh(armGeo, armMat);
+                rightArm.position.set(0.65, 0.6, 0);
+                rightArm.castShadow = true;
+                group.add(rightArm);
+
+                // Legs
+                const legGeo = new THREE.BoxGeometry(0.4, 1, 0.4);
+                const legMat = new THREE.MeshLambertMaterial({ color: 0x1e3a5f }); // Dark blue pants
+                const leftLeg = new THREE.Mesh(legGeo, legMat);
+                leftLeg.position.set(-0.25, -0.5, 0);
+                leftLeg.castShadow = true;
+                group.add(leftLeg);
+                const rightLeg = new THREE.Mesh(legGeo, legMat);
+                rightLeg.position.set(0.25, -0.5, 0);
+                rightLeg.castShadow = true;
+                group.add(rightLeg);
+
+                this.mesh = group;
+                this.mesh.position.set(0, 5, 0);
+                scene.add(this.mesh);
+            },
+
+            reset(position) {
+                this.mesh.position.copy(position);
+                this.mesh.position.y += 2;
+                this.velocity.set(0, 0, 0);
+                this.isGrounded = false;
+            }
+        };
+
+        // ============================================
+        // INPUT HANDLING
+        // ============================================
+        const keys = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            jump: false,
+            sprint: false
+        };
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'KeyW': case 'ArrowUp': keys.forward = true; break;
+                case 'KeyS': case 'ArrowDown': keys.backward = true; break;
+                case 'KeyA': case 'ArrowLeft': keys.left = true; break;
+                case 'KeyD': case 'ArrowRight': keys.right = true; break;
+                case 'Space': keys.jump = true; e.preventDefault(); break;
+                case 'ShiftLeft': case 'ShiftRight': keys.sprint = true; break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'KeyW': case 'ArrowUp': keys.forward = false; break;
+                case 'KeyS': case 'ArrowDown': keys.backward = false; break;
+                case 'KeyA': case 'ArrowLeft': keys.left = false; break;
+                case 'KeyD': case 'ArrowRight': keys.right = false; break;
+                case 'Space': keys.jump = false; break;
+                case 'ShiftLeft': case 'ShiftRight': keys.sprint = false; break;
+            }
+        });
+
+        // ============================================
+        // PLATFORMS & OBSTACLES
+        // ============================================
+        const platforms = [];
+        const checkpoints = [];
+        const killBricks = [];
+        const movingPlatforms = [];
+        const bouncePads = [];
+        const speedBoosts = [];
+        const particles = [];
+        let finishLine = null;
+
+        function createPlatform(x, y, z, width, height, depth, color = CONFIG.colors.platform) {
+            const geo = new THREE.BoxGeometry(width, height, depth);
+            const mat = new THREE.MeshLambertMaterial({ color });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true;
+            mesh.castShadow = true;
+            scene.add(mesh);
+
+            const platform = {
+                mesh,
+                bounds: {
+                    minX: x - width/2,
+                    maxX: x + width/2,
+                    minY: y - height/2,
+                    maxY: y + height/2,
+                    minZ: z - depth/2,
+                    maxZ: z + depth/2
+                }
+            };
+            platforms.push(platform);
+            return platform;
+        }
+
+        function createCheckpoint(x, y, z, index) {
+            const geo = new THREE.BoxGeometry(3, 0.3, 3);
+            const mat = new THREE.MeshLambertMaterial({
+                color: CONFIG.colors.checkpoint,
+                emissive: CONFIG.colors.checkpoint,
+                emissiveIntensity: 0.3
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            // Add glowing ring
+            const ringGeo = new THREE.TorusGeometry(1.5, 0.1, 8, 32);
+            const ringMat = new THREE.MeshLambertMaterial({
+                color: CONFIG.colors.checkpoint,
+                emissive: CONFIG.colors.checkpoint,
+                emissiveIntensity: 0.5
+            });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.set(x, y + 0.5, z);
+            ring.rotation.x = Math.PI / 2;
+            scene.add(ring);
+
+            const checkpoint = {
+                mesh,
+                ring,
+                index,
+                position: new THREE.Vector3(x, y + 1, z),
+                activated: false
+            };
+            checkpoints.push(checkpoint);
+            return checkpoint;
+        }
+
+        function createKillBrick(x, y, z, width, height, depth) {
+            const geo = new THREE.BoxGeometry(width, height, depth);
+            const mat = new THREE.MeshLambertMaterial({
+                color: CONFIG.colors.killBrick,
+                emissive: CONFIG.colors.killBrick,
+                emissiveIntensity: 0.2
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.castShadow = true;
+            scene.add(mesh);
+
+            const killBrick = {
+                mesh,
+                bounds: {
+                    minX: x - width/2,
+                    maxX: x + width/2,
+                    minY: y - height/2,
+                    maxY: y + height/2,
+                    minZ: z - depth/2,
+                    maxZ: z + depth/2
+                }
+            };
+            killBricks.push(killBrick);
+            return killBrick;
+        }
+
+        function createMovingPlatform(x, y, z, width, height, depth, moveAxis, moveDistance, speed) {
+            const geo = new THREE.BoxGeometry(width, height, depth);
+            const mat = new THREE.MeshLambertMaterial({ color: CONFIG.colors.moving });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true;
+            mesh.castShadow = true;
+            scene.add(mesh);
+
+            const platform = {
+                mesh,
+                startPos: new THREE.Vector3(x, y, z),
+                moveAxis,
+                moveDistance,
+                speed,
+                time: Math.random() * Math.PI * 2, // Random start phase
+                getBounds() {
+                    return {
+                        minX: this.mesh.position.x - width/2,
+                        maxX: this.mesh.position.x + width/2,
+                        minY: this.mesh.position.y - height/2,
+                        maxY: this.mesh.position.y + height/2,
+                        minZ: this.mesh.position.z - depth/2,
+                        maxZ: this.mesh.position.z + depth/2
+                    };
+                }
+            };
+            movingPlatforms.push(platform);
+            return platform;
+        }
+
+        function createBouncePad(x, y, z, width = 4, depth = 4) {
+            const geo = new THREE.BoxGeometry(width, 0.4, depth);
+            const mat = new THREE.MeshLambertMaterial({
+                color: CONFIG.colors.bouncy,
+                emissive: CONFIG.colors.bouncy,
+                emissiveIntensity: 0.3
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            // Add arrows pointing up
+            const arrowGeo = new THREE.ConeGeometry(0.3, 0.6, 10);
+            const arrowMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            for (let i = -1; i <= 1; i++) {
+                const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+                arrow.position.set(x + i * 0.8, y + 0.5, z);
+                scene.add(arrow);
+            }
+
+            const bouncePad = {
+                mesh,
+                bounds: {
+                    minX: x - width/2,
+                    maxX: x + width/2,
+                    minY: y - 0.2,
+                    maxY: y + 0.2,
+                    minZ: z - depth/2,
+                    maxZ: z + depth/2
+                }
+            };
+            bouncePads.push(bouncePad);
+
+            // Also add as platform
+            platforms.push({
+                mesh,
+                bounds: bouncePad.bounds
+            });
+
+            return bouncePad;
+        }
+
+        function createSpeedBoost(x, y, z, width = 3, depth = 6) {
+            const geo = new THREE.BoxGeometry(width, 0.2, depth);
+            const mat = new THREE.MeshLambertMaterial({
+                color: CONFIG.colors.speedBoost,
+                emissive: CONFIG.colors.speedBoost,
+                emissiveIntensity: 0.4
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            // Add chevron arrows
+            const chevronMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            for (let i = 0; i < 3; i++) {
+                const chevronGeo = new THREE.BoxGeometry(width * 0.6, 0.1, 0.3);
+                const chevron = new THREE.Mesh(chevronGeo, chevronMat);
+                chevron.position.set(x, y + 0.2, z - depth/3 + i * (depth/3));
+                scene.add(chevron);
+            }
+
+            const speedBoost = {
+                mesh,
+                bounds: {
+                    minX: x - width/2,
+                    maxX: x + width/2,
+                    minY: y - 0.1,
+                    maxY: y + 0.1,
+                    minZ: z - depth/2,
+                    maxZ: z + depth/2
+                }
+            };
+            speedBoosts.push(speedBoost);
+            return speedBoost;
+        }
+
+        // Particle system for effects
+        function createParticles(position, color, count = 15, speed = 5) {
+            for (let i = 0; i < count; i++) {
+                const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                const mat = new THREE.MeshLambertMaterial({ color });
+                const particle = new THREE.Mesh(geo, mat);
+                particle.position.copy(position);
+
+                const velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * speed,
+                    Math.random() * speed,
+                    (Math.random() - 0.5) * speed
+                );
+
+                particles.push({
+                    mesh: particle,
+                    velocity,
+                    life: 1.0
+                });
+
+                scene.add(particle);
+            }
+        }
+
+        function updateParticles(delta) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.velocity.y -= 15 * delta; // Gravity
+                p.mesh.position.add(p.velocity.clone().multiplyScalar(delta));
+                p.life -= delta * 2;
+                p.mesh.material.opacity = p.life;
+                p.mesh.scale.setScalar(p.life);
+
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Confetti for win screen
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dfe6e9', '#fd79a8'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 50);
+            }
+        }
+
+        function createFinishLine(x, y, z) {
+            // Golden platform
+            const geo = new THREE.BoxGeometry(5, 0.5, 5);
+            const mat = new THREE.MeshLambertMaterial({
+                color: CONFIG.colors.finishLine,
+                emissive: CONFIG.colors.finishLine,
+                emissiveIntensity: 0.3
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            // Trophy
+            const trophyGroup = new THREE.Group();
+
+            // Cup
+            const cupGeo = new THREE.CylinderGeometry(0.8, 0.5, 1.5, 16);
+            const cupMat = new THREE.MeshLambertMaterial({
+                color: CONFIG.colors.finishLine,
+                emissive: CONFIG.colors.finishLine,
+                emissiveIntensity: 0.3
+            });
+            const cup = new THREE.Mesh(cupGeo, cupMat);
+            cup.position.y = 1.5;
+            trophyGroup.add(cup);
+
+            // Base
+            const baseGeo = new THREE.CylinderGeometry(0.6, 0.8, 0.5, 16);
+            const base = new THREE.Mesh(baseGeo, cupMat);
+            base.position.y = 0.5;
+            trophyGroup.add(base);
+
+            trophyGroup.position.set(x, y + 0.5, z);
+            scene.add(trophyGroup);
+
+            finishLine = {
+                mesh,
+                trophy: trophyGroup,
+                position: new THREE.Vector3(x, y, z),
+                bounds: {
+                    minX: x - 2.5,
+                    maxX: x + 2.5,
+                    minY: y - 0.25,
+                    maxY: y + 0.25,
+                    minZ: z - 2.5,
+                    maxZ: z + 2.5
+                }
+            };
+
+            // Also add as platform so player can stand on it
+            platforms.push({
+                mesh,
+                bounds: finishLine.bounds
+            });
+        }
+
+        // ============================================
+        // BUILD THE OBBY COURSE (EASY VERSION)
+        // ============================================
+        function buildCourse() {
+            // Ground at start - bigger starting area
+            createPlatform(0, -1, 0, 25, 2, 25, CONFIG.colors.ground);
+
+            // Checkpoint 1 (Start)
+            createCheckpoint(0, 0.15, 0, 0);
+
+            // Stage 1: Very easy straight jumps - big platforms, small gaps
+            createPlatform(0, 0, 10, 6, 1, 6);
+            createPlatform(0, 0.5, 18, 6, 1, 6);
+            createPlatform(0, 1, 26, 6, 1, 6);
+
+            // Checkpoint 2
+            createPlatform(0, 1.5, 35, 8, 1, 8);
+            createCheckpoint(0, 2.15, 35, 1);
+
+            // Stage 2: Gentle side jumps - wider platforms, less height change
+            createPlatform(-3, 2, 44, 6, 1, 6);
+            createPlatform(3, 2.5, 52, 6, 1, 6);
+            createPlatform(-3, 3, 60, 6, 1, 6);
+
+            // Checkpoint 3
+            createPlatform(0, 3.5, 70, 8, 1, 8);
+            createCheckpoint(0, 4.15, 70, 2);
+
+            // Stage 3: Easy kill brick challenge - wide safe path
+            createPlatform(0, 4, 80, 10, 1, 5);
+            createPlatform(0, 4.6, 87, 6, 0.3, 1); 
+            createPlatform(0, 4, 92, 10, 1, 5);
+
+            // Checkpoint 4
+            createPlatform(0, 4.5, 102, 8, 1, 8);
+            createCheckpoint(0, 5.15, 102, 3);
+
+            // Stage 4: Bounce pad fun! - learn to use bounce pads
+            createPlatform(0, 5, 112, 6, 1, 6);
+            createBouncePad(0, 5.7, 112, 3, 3);  // Bounce pad on platform
+            createPlatform(0, 10, 125, 6, 1, 6);  // High platform to land on
+            createPlatform(0, 10.5, 135, 6, 1, 6);
+
+            // Checkpoint 5
+            createPlatform(0, 11, 145, 8, 1, 8);
+            createCheckpoint(0, 11.65, 145, 4);
+
+            // Stage 5: Speed boost zone!
+            createPlatform(0, 11, 155, 5, 1, 20);
+            createSpeedBoost(0, 11.6, 160, 3, 8);  // Speed boost strip
+            createPlatform(0, 11.5, 180, 5, 1, 6);
+
+            // Checkpoint 6
+            createPlatform(0, 8, 175, 8, 1, 8);
+            createCheckpoint(0, 8.65, 175, 5);
+
+            // Stage 6: Easy ascending platforms - bigger, gentler climb
+            createPlatform(0, 8.5, 185, 5, 1, 5);
+            createPlatform(2, 9, 193, 5, 1, 5);
+            createPlatform(-2, 9.5, 201, 5, 1, 5);
+            createPlatform(0, 10, 209, 5, 1, 5);
+
+            // Checkpoint 7
+            createPlatform(0, 10.5, 220, 8, 1, 8);
+            createCheckpoint(0, 11.15, 220, 6);
+
+            // Stage 7: Bounce pad parkour - fun bouncing!
+            createPlatform(0, 12, 230, 5, 1, 5);
+            createBouncePad(0, 12.7, 230, 3, 3);
+            createPlatform(0, 18, 245, 5, 1, 5);  // High landing
+            createBouncePad(0, 18.7, 245, 3, 3);
+            createPlatform(0, 24, 260, 6, 1, 6);  // Even higher!
+
+            // Checkpoint 8
+            createPlatform(0, 24.5, 272, 8, 1, 8);
+            createCheckpoint(0, 25.15, 272, 7);
+
+            // Stage 8: Speed boost race - fast and fun!
+            createPlatform(0, 25, 285, 5, 1, 30);
+            createSpeedBoost(0, 25.6, 290, 3, 10);
+            createPlatform(0, 25.5, 320, 5, 1, 5);
+
+            // Checkpoint 9
+            createPlatform(0, 26, 332, 8, 1, 8);
+            createCheckpoint(0, 26.65, 332, 8);
+
+            // Stage 9: Final combo - bounce and speed!
+            createPlatform(0, 26, 345, 6, 1, 6);
+            createBouncePad(0, 26.7, 345, 3, 3);
+            createPlatform(0, 32, 360, 6, 1, 15);
+            createSpeedBoost(0, 32.6, 365, 3, 8);
+            createPlatform(0, 33, 382, 6, 1, 6);
+
+            // Checkpoint 10 (near finish)
+            createPlatform(0, 33.5, 395, 8, 1, 8);
+            createCheckpoint(0, 34.15, 395, 9);
+
+            // Finish line! - big platform, easy to land on
+            createPlatform(0, 34, 410, 12, 1, 12);
+            createFinishLine(0, 34.75, 410);
+
+            // Update total stages display
+            document.getElementById('total-stages').textContent = checkpoints.length;
+        }
+
+        // ============================================
+        // COLLISION DETECTION
+        // ============================================
+        function checkCollision(playerPos, bounds, padding = 0.5) {
+            return (
+                playerPos.x + padding > bounds.minX &&
+                playerPos.x - padding < bounds.maxX &&
+                playerPos.y - 1 < bounds.maxY &&
+                playerPos.y + 2 > bounds.minY &&
+                playerPos.z + padding > bounds.minZ &&
+                playerPos.z - padding < bounds.maxZ
+            );
+        }
+
+        function checkGroundCollision(playerPos, bounds) {
+            const feetY = playerPos.y - 1;
+            const padding = 0.4;
+
+            return (
+                playerPos.x + padding > bounds.minX &&
+                playerPos.x - padding < bounds.maxX &&
+                playerPos.z + padding > bounds.minZ &&
+                playerPos.z - padding < bounds.maxZ &&
+                feetY <= bounds.maxY + 0.1 &&
+                feetY >= bounds.maxY - 0.5
+            );
+        }
+
+        // ============================================
+        // GAME LOGIC
+        // ============================================
+        function killPlayer() {
+            if (gameState.isDead) return;
+
+            gameState.isDead = true;
+            playSound('death');
+            createParticles(player.mesh.position.clone(), 0xff0000, 20, 8);
+            document.getElementById('death-message').style.display = 'block';
+
+            setTimeout(() => {
+                respawnPlayer();
+                document.getElementById('death-message').style.display = 'none';
+                gameState.isDead = false;
+            }, 1000);
+        }
+
+        function respawnPlayer() {
+            const checkpoint = checkpoints[gameState.currentCheckpoint];
+            if (checkpoint) {
+                player.reset(checkpoint.position);
+            } else {
+                player.reset(new THREE.Vector3(0, 2, 0));
+            }
+        }
+
+        function activateCheckpoint(checkpoint) {
+            if (checkpoint.index > gameState.currentCheckpoint) {
+                gameState.currentCheckpoint = checkpoint.index;
+                document.getElementById('current-stage').textContent = checkpoint.index + 1;
+
+                // Sound and particles
+                playSound('checkpoint');
+                createParticles(checkpoint.position.clone(), 0x22c55e, 25, 6);
+
+                // Show popup
+                const popup = document.getElementById('checkpoint-popup');
+                popup.textContent = `Checkpoint ${checkpoint.index + 1}!`;
+                popup.style.display = 'block';
+                setTimeout(() => popup.style.display = 'none', 1500);
+
+                // Visual feedback
+                checkpoint.activated = true;
+                checkpoint.mesh.material.color.setHex(CONFIG.colors.checkpointActive);
+                checkpoint.mesh.material.emissive.setHex(CONFIG.colors.checkpointActive);
+                checkpoint.ring.material.color.setHex(CONFIG.colors.checkpointActive);
+                checkpoint.ring.material.emissive.setHex(CONFIG.colors.checkpointActive);
+            }
+        }
+
+        function activateSpeedBoost() {
+            if (gameState.hasSpeedBoost) return;
+
+            gameState.hasSpeedBoost = true;
+            gameState.speedBoostEndTime = performance.now() + CONFIG.speedBoostDuration;
+            playSound('speedBoost');
+
+            document.getElementById('speed-indicator').style.display = 'block';
+
+            // Create trail particles
+            createParticles(player.mesh.position.clone(), CONFIG.colors.speedBoost, 10, 3);
+        }
+
+        function winGame() {
+            gameState.isPlaying = false;
+            playSound('win');
+            createConfetti();
+            createParticles(player.mesh.position.clone(), 0xffd700, 30, 10);
+            const finalTime = formatTime(gameState.elapsedTime);
+            document.getElementById('final-time').textContent = finalTime;
+            document.getElementById('win-screen').style.display = 'flex';
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toFixed(2).padStart(5, '0')}`;
+        }
+
+        function resetGame() {
+            gameState.currentCheckpoint = 0;
+            gameState.startTime = performance.now();
+            gameState.elapsedTime = 0;
+            gameState.isDead = false;
+
+            document.getElementById('current-stage').textContent = '1';
+            document.getElementById('timer').textContent = '0:00.00';
+
+            // Reset checkpoints
+            checkpoints.forEach(cp => {
+                cp.activated = false;
+                cp.mesh.material.color.setHex(CONFIG.colors.checkpoint);
+                cp.mesh.material.emissive.setHex(CONFIG.colors.checkpoint);
+                cp.ring.material.color.setHex(CONFIG.colors.checkpoint);
+                cp.ring.material.emissive.setHex(CONFIG.colors.checkpoint);
+            });
+
+            player.reset(new THREE.Vector3(0, 2, 0));
+        }
+
+        // ============================================
+        // UPDATE LOOP
+        // ============================================
+        const clock = new THREE.Clock();
+
+        function update() {
+            if (!gameState.isPlaying || gameState.isDead) return;
+
+            const delta = Math.min(clock.getDelta(), 0.1);
+
+            // Update timer
+            gameState.elapsedTime = (performance.now() - gameState.startTime) / 1000;
+            document.getElementById('timer').textContent = formatTime(gameState.elapsedTime);
+
+            // Calculate movement direction
+            const moveDirection = new THREE.Vector3();
+
+            // Get camera forward direction (ignoring Y)
+            const cameraDirection = new THREE.Vector3();
+            camera.getWorldDirection(cameraDirection);
+            cameraDirection.y = 0;
+            cameraDirection.normalize();
+
+            // Get camera right direction
+            const cameraRight = new THREE.Vector3();
+            cameraRight.crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0));
+
+            if (keys.forward) moveDirection.add(cameraDirection);
+            if (keys.backward) moveDirection.sub(cameraDirection);
+            if (keys.left) moveDirection.sub(cameraRight);
+            if (keys.right) moveDirection.add(cameraRight);
+
+            if (moveDirection.length() > 0) {
+                moveDirection.normalize();
+
+                // Rotate player to face movement direction
+                const targetAngle = Math.atan2(moveDirection.x, moveDirection.z);
+                player.mesh.rotation.y = targetAngle;
+            }
+
+            // Check speed boost status
+            if (gameState.hasSpeedBoost && performance.now() > gameState.speedBoostEndTime) {
+                gameState.hasSpeedBoost = false;
+                document.getElementById('speed-indicator').style.display = 'none';
+            }
+
+            // Apply speed
+            let speed = CONFIG.playerSpeed;
+            if (keys.sprint) speed *= CONFIG.sprintMultiplier;
+            if (gameState.hasSpeedBoost) speed *= CONFIG.speedBoostMultiplier;
+
+            player.velocity.x = moveDirection.x * speed;
+            player.velocity.z = moveDirection.z * speed;
+
+            // Apply gravity
+            player.velocity.y -= CONFIG.gravity * delta;
+
+            // Jump
+            if (keys.jump && player.isGrounded && player.canJump) {
+                player.velocity.y = CONFIG.jumpForce;
+                player.isGrounded = false;
+                player.canJump = false;
+                playSound('jump');
+            }
+            if (!keys.jump) {
+                player.canJump = true;
+            }
+
+            // Update moving platforms
+            movingPlatforms.forEach(platform => {
+                platform.time += delta * platform.speed;
+                const offset = Math.sin(platform.time) * platform.moveDistance;
+
+                if (platform.moveAxis === 'x') {
+                    platform.mesh.position.x = platform.startPos.x + offset;
+                } else if (platform.moveAxis === 'y') {
+                    platform.mesh.position.y = platform.startPos.y + offset;
+                } else if (platform.moveAxis === 'z') {
+                    platform.mesh.position.z = platform.startPos.z + offset;
+                }
+            });
+
+            // Move player
+            const newPos = player.mesh.position.clone();
+            newPos.add(player.velocity.clone().multiplyScalar(delta));
+
+            // Ground collision
+            player.isGrounded = false;
+
+            // Check static platforms
+            for (const platform of platforms) {
+                if (checkGroundCollision(newPos, platform.bounds)) {
+                    if (player.velocity.y <= 0) {
+                        newPos.y = platform.bounds.maxY + 1;
+                        player.velocity.y = 0;
+                        player.isGrounded = true;
+                    }
+                }
+            }
+
+            // Check moving platforms
+            for (const platform of movingPlatforms) {
+                const bounds = platform.getBounds();
+                if (checkGroundCollision(newPos, bounds)) {
+                    if (player.velocity.y <= 0) {
+                        newPos.y = bounds.maxY + 1;
+                        player.velocity.y = 0;
+                        player.isGrounded = true;
+                    }
+                }
+            }
+
+            player.mesh.position.copy(newPos);
+
+            // Check kill bricks
+            for (const killBrick of killBricks) {
+                if (checkCollision(player.mesh.position, killBrick.bounds, 0.3)) {
+                    killPlayer();
+                    return;
+                }
+            }
+
+            // Check fall death
+            if (player.mesh.position.y < CONFIG.fallDeathY) {
+                killPlayer();
+                return;
+            }
+
+            // Check checkpoints
+            for (const checkpoint of checkpoints) {
+                const dist = player.mesh.position.distanceTo(checkpoint.position);
+                if (dist < 2) {
+                    activateCheckpoint(checkpoint);
+                }
+            }
+
+            // Check bounce pads
+            for (const bouncePad of bouncePads) {
+                if (checkGroundCollision(player.mesh.position, bouncePad.bounds)) {
+                    if (player.velocity.y <= 0) {
+                        player.velocity.y = CONFIG.bounceForce;
+                        player.isGrounded = false;
+                        playSound('bounce');
+                        createParticles(
+                            new THREE.Vector3(player.mesh.position.x, bouncePad.bounds.maxY, player.mesh.position.z),
+                            CONFIG.colors.bouncy, 10, 4
+                        );
+                    }
+                }
+            }
+
+            // Check speed boosts
+            for (const speedBoost of speedBoosts) {
+                if (checkCollision(player.mesh.position, speedBoost.bounds, 0.3)) {
+                    activateSpeedBoost();
+                }
+            }
+
+            // Check finish line
+            if (finishLine && checkCollision(player.mesh.position, finishLine.bounds, 0.5)) {
+                winGame();
+            }
+
+            // Update particles
+            updateParticles(delta);
+
+            // Rotate checkpoint rings
+            checkpoints.forEach(cp => {
+                cp.ring.rotation.z += delta * 2;
+                // Gentle hover effect
+                cp.ring.position.y = cp.mesh.position.y + 0.5 + Math.sin(performance.now() * 0.003) * 0.1;
+            });
+
+            // Animate bounce pads (pulsing)
+            bouncePads.forEach(bp => {
+                const scale = 1 + Math.sin(performance.now() * 0.005) * 0.05;
+                bp.mesh.scale.y = scale;
+            });
+
+            // Rotate trophy
+            if (finishLine) {
+                finishLine.trophy.rotation.y += delta;
+                // Gentle hover
+                finishLine.trophy.position.y = finishLine.mesh.position.y + 0.5 + Math.sin(performance.now() * 0.002) * 0.2;
+            }
+
+            // Speed boost trail effect
+            if (gameState.hasSpeedBoost && Math.random() < 0.3) {
+                createParticles(player.mesh.position.clone().add(new THREE.Vector3(0, -0.5, 0)), CONFIG.colors.speedBoost, 1, 1);
+            }
+
+            // Update camera (third-person follow)
+            const cameraOffset = new THREE.Vector3(0, 8, -12);
+            const targetCameraPos = player.mesh.position.clone().add(cameraOffset);
+            camera.position.lerp(targetCameraPos, 5 * delta);
+            camera.lookAt(player.mesh.position.clone().add(new THREE.Vector3(0, 2, 0)));
+        }
+
+        // ============================================
+        // RENDER LOOP
+        // ============================================
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        // Add decorative clouds
+        function createClouds() {
+            const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+
+            for (let i = 0; i < 20; i++) {
+                const cloudGroup = new THREE.Group();
+
+                // Each cloud is made of several spheres
+                const numParts = 3 + Math.floor(Math.random() * 3);
+                for (let j = 0; j < numParts; j++) {
+                    const size = 3 + Math.random() * 4;
+                    const cloudGeo = new THREE.SphereGeometry(size, 8, 8);
+                    const cloudPart = new THREE.Mesh(cloudGeo, cloudMat);
+                    cloudPart.position.set(
+                        j * 3 - numParts * 1.5,
+                        Math.random() * 2,
+                        Math.random() * 2
+                    );
+                    cloudGroup.add(cloudPart);
+                }
+
+                cloudGroup.position.set(
+                    (Math.random() - 0.5) * 200,
+                    40 + Math.random() * 30,
+                    Math.random() * 400
+                );
+
+                scene.add(cloudGroup);
+            }
+        }
+
+        // Add decorative trees/structures along the course
+        function createDecorations() {
+            const treeMat = new THREE.MeshLambertMaterial({ color: 0x228b22 });
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
+
+            // Add trees along the course
+            for (let z = 0; z < 400; z += 30) {
+                for (let side = -1; side <= 1; side += 2) {
+                    if (Math.random() > 0.5) continue;
+
+                    const x = side * (15 + Math.random() * 10);
+                    const treeGroup = new THREE.Group();
+
+                    // Trunk
+                    const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 3, 8);
+                    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                    trunk.position.y = 1.5;
+                    trunk.castShadow = true;
+                    treeGroup.add(trunk);
+
+                    // Leaves (stacked cones)
+                    for (let i = 0; i < 3; i++) {
+                        const leavesGeo = new THREE.ConeGeometry(2 - i * 0.4, 2, 8);
+                        const leaves = new THREE.Mesh(leavesGeo, treeMat);
+                        leaves.position.y = 3.5 + i * 1.2;
+                        leaves.castShadow = true;
+                        treeGroup.add(leaves);
+                    }
+
+                    treeGroup.position.set(x, -1, z);
+                    scene.add(treeGroup);
+                }
+            }
+        }
+
+        function init() {
+            player.create();
+            buildCourse();
+            createClouds();
+            createDecorations();
+
+            // Start button
+            document.getElementById('start-btn').addEventListener('click', () => {
+                initAudio();  // Initialize audio on user interaction
+                document.getElementById('start-screen').style.display = 'none';
+                gameState.isPlaying = true;
+                gameState.startTime = performance.now();
+                clock.start();
+            });
+
+            // Restart button
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                document.getElementById('win-screen').style.display = 'none';
+                resetGame();
+                gameState.isPlaying = true;
+                gameState.startTime = performance.now();
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Position camera initially
+            camera.position.set(0, 10, -15);
+            camera.lookAt(0, 0, 0);
+
+            animate();
+        }
+
+        init();
+    </script>
+</body>
+</html>
