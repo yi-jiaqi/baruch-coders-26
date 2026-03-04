@@ -12,7 +12,7 @@ function setup() {
   colorOfBackground = color(220, 220, 220);
   colorOfBackground_Failed = color(255, 0, 0);
 
-  createCanvas(400, 600);
+  createCanvas(windowWidth, windowHeight);
   textAlign(CENTER);
   button = createButton("click me");
   button.position(50, 100);
@@ -31,20 +31,20 @@ function draw() {
     background(colorOfBackground);
   }
 
-  text("High Score: ", 200, 50);
+  text("High Score: ", width/2, 50);
   // text("Jayvian - 4891772 - 50 Attempts", 200, 80);
   
   
-  text(points, 200, 200);
-  text("points:", 200, 150);
+  text(points, width/2, 200);
+  text("points:", width/2, 150);
 
-  text("add:", 200, 250);
-  text(add, 200, 300);
+  text("add:", width/2, 250);
+  text(add, width/2, 300);
 
-  text("Attempts Left:", 200, 350);
-  text(attempts, 200, 400);
+  text("Attempts Left:", width/2, 350);
+  text(attempts, width/2, 400);
 
-  text("Current High Score By Benji: 134,217,812", 200, 450);
+  text("Current High Score By Benji: 134,217,812", width/2, 450);
 }
 
 function plusOne() {
